@@ -3,6 +3,7 @@ library(pracma)
 library(dplyr)
 library(jsonlite)
 library(reshape2)
+library(e1071)
 
 
 
@@ -10,12 +11,12 @@ library(reshape2)
 
 
 
-#get the data and return a raw matrix with measures
+#get the data from a facility in database and return a raw matrix with measures
 getMLdata <- function (facility){
 
 
 #GET list of facilities on server
-listaFacilities <- jsonlite::fromJSON("http://server-api-wifi-indoor.herokuapp.com/facilities/user/2") 
+listaFacilities <- jsonlite::fromJSON("http://server-api-wifi-indoor.herokuapp.com/facilities/user/1") 
 
 #GET id of desired facility
 id <- dplyr::filter(listaFacilities, name== facility)$id
@@ -137,13 +138,13 @@ prepareData <- function (listWifi){
   
   #convert measures from dbM to Watts 
   #TODO checar significancia dos algarismos na conversao
-  mlWifi[,-1] <- apply(mlWifi[,-1],2,Vectorize(dbMtoWatt))
+  #mlWifi[,-1] <- apply(mlWifi[,-1],2,Vectorize(dbMtoWatt))
   
   #substitute NAs with zero
   #we consider the signals which where not measured (i.e. the signal was too low) to be zero in power
-  mlWifi[is.na(mlWifi)] <- 0
+  mlWifi[is.na(mlWifi)] <- -110
   
-  return (mlWifi)
+  return (as.data.frame(mlWifi))
 }
 
 #
@@ -169,9 +170,9 @@ prepareData <- function (listWifi){
 
 #Name of facility
 #facility <- "Rua Lino Coutinho, 237, Ap. 43"
-facility <- "casa do lira"
+facility <- "Apartamento Adriano"
 
-rawData <- getMLdata(facility)
+#rawData <- getMLdata(facility)
 
 tidyData <- prepareData(rawData)
 
@@ -180,16 +181,33 @@ tidyData <- prepareData(rawData)
 
 # Train-test random splitting for machine learning
 # 30% for tests and the rest for training
+
+#zones id is a factor, not a number!
+tidyData$idZ <- as.factor(tidyData$idZ)
+
+colnames(tidyData)[3] <- "00:19:e0:a0:07:0e3"
+
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 train <- tidyData[index,]
 test <- tidyData[-index,]
 
 #Now, we will apply many diferent machine learning algorithms and see which yelds the best classification accuracy
 
+
+
+
 #LOGISTIC REGRESSION 
 
+#number of classes
+#labels <- 2
 
 
+trainX <- select(train,-idZ)
+testX <- select(test,-idZ)
+trainY <- select(train,idZ)
+testY <- select(test,idZ)
+
+#error <- oneVsAll(trainX,trainY,labels,testX,testY)
 
 
 
@@ -197,15 +215,41 @@ test <- tidyData[-index,]
 
 
 
+# Scaling data for the NN
+maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
+mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
+scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
+
+#concatenate with response vector again 
+scaled$idZ <- tidyData$idZ
+
+
+# Train-test scaled
+train_s <- scaled[index,]
+test_s <- scaled[-index,]
+
+
+
+
+# NN training
+library(neuralnet)
+n <- names(train_)
+f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+nn <- neuralnet(f,data=train_,hidden=c(7,5),linear.output=FALSE)
+
+# Visual plot of the model
+plot(nn)
+
 
 
 
 #SUPPORT VECTOR MACHINE
 
 
+attach(scaled)
+mylogit <-svm(idZ~., data = scaled)
 
-
-
+predict(mylogit,testY)
 
 
 
