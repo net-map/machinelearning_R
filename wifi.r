@@ -12,6 +12,7 @@ library(e1071)
 
 
 #get the data from a facility in database and return a raw matrix with measures
+
 getMLdata <- function (facility){
 
 
@@ -19,7 +20,7 @@ getMLdata <- function (facility){
 listaFacilities <- jsonlite::fromJSON("http://server-api-wifi-indoor.herokuapp.com/facilities/user/1") 
 
 #GET id of desired facility
-id <- dplyr::filter(listaFacilities, name== facility)$id
+id <- dplyr::filter(listaFacilities, name == facility)$id
 
 
 #Create url with id of desired facility
@@ -38,59 +39,66 @@ zonesID <- listZones$id
 templistWifi <- NULL
 listWifi <- NULL
 measuresList <- NULL
+listAP <- NULL
 
 #For each id, GET all the points
 for (idZ in zonesID) {
       #GET list of points in zone with id "id"
-       print(paste("Pegando pontos da zona",idZ))
+       #print(paste("Pegando pontos da zona",idZ))
        urlPoints <- paste("http://server-api-wifi-indoor.herokuapp.com/points/zone/",toString.default(idZ),sep="") 
        listPoints <- jsonlite::fromJSON(urlPoints)
        pointsID <- listPoints$id
-       print(paste(" ", "Foi achado o ponto ",pointsID))
+       #print(paste(" ", "Foi achado o ponto ",pointsID))
        #empty WifiList for each zone before point loop
        templistWifi <- NULL
        #GET first measure in each point
        for (idP in pointsID){
          
          #GET list of measures in point with id "idP"
-         print(paste("   ","Pegando measures do ponto: ",idP))
+         #print(paste("   ","Pegando measures do ponto: ",idP))
          urlMeasures <- paste("http://server-api-wifi-indoor.herokuapp.com/measures/point/",toString.default(idP),sep="")
          listMeasures <- jsonlite::fromJSON(urlMeasures)
-         #Get id of only first measure 
-         measureID <- listMeasures$id[1]
          
+         #GET FIRST MEASURE
+         urlAP<- paste("http://server-api-wifi-indoor.herokuapp.com/access_points/measure/",toString.default(listMeasures$id[1]),sep="")
+
+         listAP <- jsonlite::fromJSON(urlAP)
+
+         listAP <- select(listAP,c(bssid,rssi))
          
-         
-         
-         
-         for (mId in listMeasures$id){
-           
+         #FOR second measure to the last
+         for (mId in listMeasures$id[-1]){
            urlAP<- paste("http://server-api-wifi-indoor.herokuapp.com/access_points/measure/",toString.default(mId),sep="")
-           
-           listAP <- jsonlite::fromJSON(urlAP)
-           
-           
-           
-          # measuresList <- cbind(measuresList,select(filter(listAP,ssid=="Lira"),rssi))
+           listAPt <- jsonlite::fromJSON(urlAP)
+           #merge by BSSID, will end with dataframe with bssid and multiple rows of RSSIs
+           listAP <- merge(listAP,listAPt[c("bssid","rssi")],by="bssid")
+
          }
+         
+         #apply kalman filter for every measure
+         k<- matrix(nrow=nrow(listAP))
+         
+         for(i in 1:nrow(listAP)){
+
+           temp <- listAP[i,-1]
+      
+           k[i,] <- kalmanFilter(temp)
            
+         }
          
          
+         res <- cbind(listAP[,1],k)
          
-         #TODO apply kalman filter for every measure
-         
-         
-         print(paste("     ","Foi pega a measure: ",measureID))
-         #GET lista of detected APs for this measure
-         urlAccessPoints <- paste("http://server-api-wifi-indoor.herokuapp.com/access_points/measure/",toString.default(measureID),sep="")
-         listAccessPoints <- jsonlite::fromJSON(urlAccessPoints)
-         
+
+         #print(paste("     ","Foi pega a measure: ",listMeasures$id[1]))
+     
+         listAccessPoints <- data.frame(bssid=res[,1],rssi=res[,2])
          
          #only bssi and rssi matter for the machine learning algorithm
          
          #create vector with bssid and rssi: each with the id of the zone and measure they are part of
          
-         templistWifi <- cbind(t(cbind(select(listAccessPoints,c(bssid,rssi)),idZ,measureID)),templistWifi)
+         templistWifi <- cbind(t(cbind(select(listAccessPoints,c(bssid,rssi)),idZ,listMeasures$id[1])),templistWifi)
          
          
        }
@@ -172,7 +180,7 @@ prepareData <- function (listWifi){
 #facility <- "Rua Lino Coutinho, 237, Ap. 43"
 facility <- "Apartamento Adriano"
 
-#rawData <- getMLdata(facility)
+rawData <- getMLdata(facility)
 
 tidyData <- prepareData(rawData)
 
@@ -233,9 +241,9 @@ test_s <- scaled[-index,]
 
 # NN training
 library(neuralnet)
-n <- names(train_)
+n <- names(train_s)
 f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
-nn <- neuralnet(f,data=train_,hidden=c(7,5),linear.output=FALSE)
+nn <- neuralnet(f,data=train_s,hidden=c(7,5),linear.output=FALSE)
 
 # Visual plot of the model
 plot(nn)
