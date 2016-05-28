@@ -44,18 +44,18 @@ listAP <- NULL
 #For each id, GET all the points
 for (idZ in zonesID) {
       #GET list of points in zone with id "id"
-       #print(paste("Pegando pontos da zona",idZ))
+       print(paste("Pegando pontos da zona",idZ))
        urlPoints <- paste("http://server-api-wifi-indoor.herokuapp.com/points/zone/",toString.default(idZ),sep="") 
        listPoints <- jsonlite::fromJSON(urlPoints)
        pointsID <- listPoints$id
-       #print(paste(" ", "Foi achado o ponto ",pointsID))
+       print(paste(" ", "Foi achado o ponto ",pointsID))
        #empty WifiList for each zone before point loop
        templistWifi <- NULL
        #GET first measure in each point
        for (idP in pointsID){
          
          #GET list of measures in point with id "idP"
-         #print(paste("   ","Pegando measures do ponto: ",idP))
+         print(paste("   ","Pegando measures do ponto: ",idP))
          urlMeasures <- paste("http://server-api-wifi-indoor.herokuapp.com/measures/point/",toString.default(idP),sep="")
          listMeasures <- jsonlite::fromJSON(urlMeasures)
          
@@ -64,7 +64,7 @@ for (idZ in zonesID) {
 
          listAP <- jsonlite::fromJSON(urlAP)
 
-         listAP <- select(listAP,c(bssid,rssi))
+         listAP <- dplyr::select(listAP,c(bssid,rssi))
          
          #FOR second measure to the last
          for (mId in listMeasures$id[-1]){
@@ -90,7 +90,7 @@ for (idZ in zonesID) {
          res <- cbind(listAP[,1],k)
          
 
-         #print(paste("     ","Foi pega a measure: ",listMeasures$id[1]))
+         print(paste("     ","Foi pega a measure: ",listMeasures$id[1]))
      
          listAccessPoints <- data.frame(bssid=res[,1],rssi=res[,2])
          
@@ -98,7 +98,7 @@ for (idZ in zonesID) {
          
          #create vector with bssid and rssi: each with the id of the zone and measure they are part of
          
-         templistWifi <- cbind(t(cbind(select(listAccessPoints,c(bssid,rssi)),idZ,listMeasures$id[1])),templistWifi)
+         templistWifi <- cbind(t(cbind(dplyr::select(listAccessPoints,c(bssid,rssi)),idZ,listMeasures$id[1])),templistWifi)
          
          
        }
@@ -131,6 +131,9 @@ prepareData <- function (listWifi){
   #change matrix type to dataframe
   dfWifi <- data.frame(temp)
   
+  colnames(dfWifi)[4] <- "measureID"
+  
+  
   #reshape dataframe for the machine learning algorithm
   mlWifi <- reshape2::dcast(dfWifi, measureID + idZ ~ bssid, value.var = 'rssi')
   
@@ -151,6 +154,10 @@ prepareData <- function (listWifi){
   #substitute NAs with zero
   #we consider the signals which where not measured (i.e. the signal was too low) to be zero in power
   mlWifi[is.na(mlWifi)] <- -110
+
+  
+  #colnames(mlWifi) <- paste("t",colnames(mlWifi),"t",sep="")
+
   
   return (as.data.frame(mlWifi))
 }
@@ -180,7 +187,7 @@ prepareData <- function (listWifi){
 #facility <- "Rua Lino Coutinho, 237, Ap. 43"
 facility <- "Apartamento Adriano"
 
-rawData <- getMLdata(facility)
+#rawData <- getMLdata(facility)
 
 tidyData <- prepareData(rawData)
 
@@ -193,7 +200,7 @@ tidyData <- prepareData(rawData)
 #zones id is a factor, not a number!
 tidyData$idZ <- as.factor(tidyData$idZ)
 
-colnames(tidyData)[3] <- "00:19:e0:a0:07:0e3"
+
 
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 train <- tidyData[index,]
@@ -210,10 +217,10 @@ test <- tidyData[-index,]
 #labels <- 2
 
 
-trainX <- select(train,-idZ)
-testX <- select(test,-idZ)
-trainY <- select(train,idZ)
-testY <- select(test,idZ)
+#trainX <- select(train,-idZ)
+#testX <- select(test,-idZ)
+#trainY <- select(train,idZ)
+#testY <- select(test,idZ)
 
 #error <- oneVsAll(trainX,trainY,labels,testX,testY)
 
@@ -241,9 +248,21 @@ test_s <- scaled[-index,]
 
 # NN training
 library(neuralnet)
+
+newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
+
+names(train_s) <- newNames
+names(test_s) <- newNames
+
+
+#names(train_s) <- paste("(",names(train_s),")",sep="")
+#names(train_s)  <-  gsub(":","",names(train_s))
+
+colnames(train_s)[length(train_s)] <- "idZ"
 n <- names(train_s)
 f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
-nn <- neuralnet(f,data=train_s,hidden=c(7,5),linear.output=FALSE)
+
+nn <- neuralnet(f,data=as.matrix(train_s),hidden=25,linear.output=FALSE)
 
 # Visual plot of the model
 plot(nn)
@@ -257,7 +276,7 @@ plot(nn)
 attach(scaled)
 mylogit <-svm(idZ~., data = scaled)
 
-predict(mylogit,testY)
+predict(mylogit)
 
 
 

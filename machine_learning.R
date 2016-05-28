@@ -13,6 +13,11 @@ kalmanFilter <- function (X){
   #if input is a dataframe or matrix, converts it to a one-dimensional vector
   X <-as.vector(X)
   
+  #transforms into row vector if needed
+  if(dim(X)[1]==1){
+    X <- t(X)
+  }
+  
   #initial hunch for mean (first measure)
   muInit <- X[1]
   #initial variance
@@ -50,9 +55,11 @@ kalmanFilter <- function (X){
     
   }
   
-  plot(unlist(outMu[1,]),type="l",ylim = c(-70,-20))
-  points(X)
-  return (outMu)
+  #plot(unlist(outMu[1,]),type="l",ylim = c(-70,-20))
+  #points(X)
+  
+  
+  return (outMu[length(outMu)])
   
   
   
