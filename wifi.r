@@ -4,6 +4,7 @@ library(dplyr)
 library(jsonlite)
 library(reshape2)
 library(e1071)
+library(kknn)
 
 
 
@@ -123,7 +124,7 @@ dbMtoWatt <- function (value){
 #transforms the data parsed in to the matrix in which the machine learning will be applied
 prepareData <- function (listWifi){
   
-  listWifi <- rawData
+  listWifi <- listWifi
   
   #transpose matrix 
   temp <- t(listWifi)
@@ -235,6 +236,8 @@ maxs <- apply(dplyr::select(tidyData,-idZ), 2, max)
 mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
 scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
 
+
+
 #concatenate with response vector again 
 scaled$idZ <- tidyData$idZ
 
@@ -250,38 +253,42 @@ test_s <- scaled[-index,]
 library(neuralnet)
 
 newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
+train_sn <- train_s
+test_sn <- test_s
 
-names(train_s) <- newNames
-names(test_s) <- newNames
+names(train_sn) <- newNames
+names(test_sn) <- newNames
 
 
 #names(train_s) <- paste("(",names(train_s),")",sep="")
 #names(train_s)  <-  gsub(":","",names(train_s))
 
-colnames(train_s)[length(train_s)] <- "idZ"
-n <- names(train_s)
+colnames(train_sn)[length(train_sn)] <- "idZ"
+n <- names(train_sn)
 f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
 
-nn <- neuralnet(f,data=as.matrix(train_s),hidden=25,linear.output=FALSE)
+#nn <- neuralnet(f,data=as.matrix(train_sn),hidden=25,linear.output=FALSE,threshold=0.01)
 
 # Visual plot of the model
-plot(nn)
+#plot(nn)
 
 
 
 
 #SUPPORT VECTOR MACHINE
 
+x = as.matrix(dplyr::select(train_s,-idZ))
+y = as.factor(as.matrix( dplyr::select(train_s,idZ)))
+mylogit <-svm(idZ~., x = x,y=y)
 
-attach(scaled)
-mylogit <-svm(idZ~., data = scaled)
+#print(train_s$idZ == predict(mylogit))
+#print(test_s$idZ == predict(mylogit,test_s))
 
-predict(mylogit)
-
-
-
-
-
+#K-nearest neighbours
 
 
 
+knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
+
+
+plot(knnTrain)
