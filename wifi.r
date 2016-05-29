@@ -188,25 +188,40 @@ prepareData <- function (listWifi){
 #facility <- "Rua Lino Coutinho, 237, Ap. 43"
 facility <- "Apartamento Adriano"
 
+
 #rawData <- getMLdata(facility)
 
 tidyData <- prepareData(rawData)
-
-
-
-
-# Train-test random splitting for machine learning
-# 30% for tests and the rest for training
 
 #zones id is a factor, not a number!
 tidyData$idZ <- as.factor(tidyData$idZ)
 
 
 
-index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
-train <- tidyData[index,]
-test <- tidyData[-index,]
 
+
+
+# Scaling data
+maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
+mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
+scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
+#concatenate with response vector again 
+scaled$idZ <- tidyData$idZ
+
+# Train-test random splitting for machine learning
+# 30% for tests and the rest for training
+#index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
+#train <- tidyData[index,]
+#test <- tidyData[-index,]
+
+#Train and test UNESCALED
+train<- dplyr::filter(tidyData,idZ==5 |idZ==4)
+test<- dplyr::filter(tidyData,idZ==6)
+test$idZ <- c(4,4,4,4,4)
+#Train and test SCALED
+train_s<- dplyr::filter(scaled,idZ==5 |idZ==4)
+test_s<- dplyr::filter(scaled,idZ==6)
+test_s$idZ <- c(4,4,4,4,4)
 #Now, we will apply many diferent machine learning algorithms and see which yelds the best classification accuracy
 
 
@@ -228,25 +243,6 @@ test <- tidyData[-index,]
 
 
 #NEURALNETWORK
-
-
-
-# Scaling data for the NN
-maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
-mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
-scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
-
-
-
-#concatenate with response vector again 
-scaled$idZ <- tidyData$idZ
-
-
-# Train-test scaled
-train_s <- scaled[index,]
-test_s <- scaled[-index,]
-
-
 
 
 # NN training
@@ -277,12 +273,23 @@ f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
 
 #SUPPORT VECTOR MACHINE
 
-x = as.matrix(dplyr::select(train_s,-idZ))
-y = as.factor(as.matrix( dplyr::select(train_s,idZ)))
-mylogit <-svm(idZ~., x = x,y=y)
+#We must separate data into X matrix for the features and Y for the response vector with the classes
+suppressWarnings(attach(train_s))
+xi<- subset(train_s,select= - idZ)
+yi <- idZ
 
-#print(train_s$idZ == predict(mylogit))
-#print(test_s$idZ == predict(mylogit,test_s))
+
+mylogit <-svm(xi,yi)
+predict(mylogit)
+
+print("INFORMACOES DO SVM")
+print(summary(mylogit))
+
+print("Com SVM, com os dados de treino, temos erro de:")
+print(100*(1-mean(train_s$idZ == predict(mylogit))))
+
+print("Com SVM, com os dados de teste, temos erro de:")
+print(100*(1-mean(test_s$idZ == predict(mylogit,dplyr::select(test_s,-idZ)))))
 
 #K-nearest neighbours
 
@@ -291,4 +298,16 @@ mylogit <-svm(idZ~., x = x,y=y)
 knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
 
 
-plot(knnTrain)
+#plot(knnTrain)
+
+
+print("INFORMACOES DO KNN")
+print(summary(knnTrain))
+
+print("Com KNN, com os dados de treino, temos erro de:")
+
+print(100*(1-mean(train_s$idZ == predict(knnTrain,train_s))))
+
+print("Com KNN, com os dados de teste, temos erro de:")
+
+print(100*(1-mean(test_s$idZ == predict(knnTrain,test_s))))
