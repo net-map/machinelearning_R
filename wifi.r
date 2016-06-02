@@ -7,18 +7,19 @@ library(e1071)
 library(kknn)
 
 
+#
+#data will be parsed from http://server-api-wifi-indoor.herokuapp.com
+#Sample GET instructions can be found via that URL
+#
+#
+#GET the data from all the zones and points in a facility in database and return a raw matrix with measures
+#
+getMLdata <- function (facility,user_id){
 
-
-
-
-
-#get the data from a facility in database and return a raw matrix with measures
-
-getMLdata <- function (facility){
-
+userid <- user_id
 
 #GET list of facilities on server
-listaFacilities <- jsonlite::fromJSON("http://server-api-wifi-indoor.herokuapp.com/facilities/user/1") 
+listaFacilities <- jsonlite::fromJSON(paste("http://server-api-wifi-indoor.herokuapp.com/facilities/user/",toString.default(userid),sep="")) 
 
 #GET id of desired facility
 id <- dplyr::filter(listaFacilities, name == facility)$id
@@ -122,6 +123,15 @@ dbMtoWatt <- function (value){
 
 
 #transforms the data parsed in to the matrix in which the machine learning will be applied
+#Dataset will be outputed in the following form
+#
+#
+#
+#RSSID1 RSSID2 RSSID3 ...   idZ (id of Zone in which that measure was made)
+# -30     -39    -29         2
+# -20     -90    -20         3 
+#  ...
+#
 prepareData <- function (listWifi){
   
   listWifi <- listWifi
@@ -154,7 +164,7 @@ prepareData <- function (listWifi){
   
   #substitute NAs with zero
   #we consider the signals which where not measured (i.e. the signal was too low) to be zero in power
-  mlWifi[is.na(mlWifi)] <- -110
+  mlWifi[is.na(mlWifi)] <- -120
 
   
   #colnames(mlWifi) <- paste("t",colnames(mlWifi),"t",sep="")
@@ -185,129 +195,20 @@ prepareData <- function (listWifi){
 
 
 #Name of facility
-#facility <- "Rua Lino Coutinho, 237, Ap. 43"
-facility <- "Apartamento Adriano"
+facility <- "lira house"
+#user id
+user <- 2
 
+#rawData <- getMLdata(facility,user)
 
-#rawData <- getMLdata(facility)
-
-tidyData <- prepareData(rawData)
+suppressWarnings( tidyData <- prepareData(rawData))
 
 #zones id is a factor, not a number!
 tidyData$idZ <- as.factor(tidyData$idZ)
 
+#tests galore!
+suppressWarnings(tests(tidyData))
 
 
 
 
-
-# Scaling data
-maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
-mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
-scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
-#concatenate with response vector again 
-scaled$idZ <- tidyData$idZ
-
-# Train-test random splitting for machine learning
-# 30% for tests and the rest for training
-#index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
-#train <- tidyData[index,]
-#test <- tidyData[-index,]
-
-#Train and test UNESCALED
-train<- dplyr::filter(tidyData,idZ==5 |idZ==4)
-test<- dplyr::filter(tidyData,idZ==6)
-test$idZ <- c(4,4,4,4,4)
-#Train and test SCALED
-train_s<- dplyr::filter(scaled,idZ==5 |idZ==4)
-test_s<- dplyr::filter(scaled,idZ==6)
-test_s$idZ <- c(4,4,4,4,4)
-#Now, we will apply many diferent machine learning algorithms and see which yelds the best classification accuracy
-
-
-
-
-#LOGISTIC REGRESSION 
-
-#number of classes
-#labels <- 2
-
-
-#trainX <- select(train,-idZ)
-#testX <- select(test,-idZ)
-#trainY <- select(train,idZ)
-#testY <- select(test,idZ)
-
-#error <- oneVsAll(trainX,trainY,labels,testX,testY)
-
-
-
-#NEURALNETWORK
-
-
-# NN training
-library(neuralnet)
-
-newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
-train_sn <- train_s
-test_sn <- test_s
-
-names(train_sn) <- newNames
-names(test_sn) <- newNames
-
-
-#names(train_s) <- paste("(",names(train_s),")",sep="")
-#names(train_s)  <-  gsub(":","",names(train_s))
-
-colnames(train_sn)[length(train_sn)] <- "idZ"
-n <- names(train_sn)
-f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
-
-#nn <- neuralnet(f,data=as.matrix(train_sn),hidden=25,linear.output=FALSE,threshold=0.01)
-
-# Visual plot of the model
-#plot(nn)
-
-
-
-
-#SUPPORT VECTOR MACHINE
-
-#We must separate data into X matrix for the features and Y for the response vector with the classes
-suppressWarnings(attach(train_s))
-xi<- subset(train_s,select= - idZ)
-yi <- idZ
-
-
-mylogit <-svm(xi,yi)
-predict(mylogit)
-
-print("INFORMACOES DO SVM")
-print(summary(mylogit))
-
-print("Com SVM, com os dados de treino, temos erro de:")
-print(100*(1-mean(train_s$idZ == predict(mylogit))))
-
-print("Com SVM, com os dados de teste, temos erro de:")
-print(100*(1-mean(test_s$idZ == predict(mylogit,dplyr::select(test_s,-idZ)))))
-
-#K-nearest neighbours
-
-
-
-knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
-
-
-#plot(knnTrain)
-
-
-print("INFORMACOES DO KNN")
-print(summary(knnTrain))
-
-print("Com KNN, com os dados de treino, temos erro de:")
-
-print(100*(1-mean(train_s$idZ == predict(knnTrain,train_s))))
-
-print("Com KNN, com os dados de teste, temos erro de:")
-
-print(100*(1-mean(test_s$idZ == predict(knnTrain,test_s))))

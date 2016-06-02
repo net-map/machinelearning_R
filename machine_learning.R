@@ -4,6 +4,179 @@ library(dplyr)
 
 #t.test(College$PhD,College$Grad.Rate) para testar independencia
 
+#used to cross-validate WIFI data using SVM
+printSVMResults <- function(train,test,mylogit,kernelType){
+  
+  
+  
+  #print(paste("INFORMACOES DO SVM COM KERNEL:",kernelType,sep = " "))
+  
+  #print(summary(mylogit))
+
+  
+  #print("Com SVM, com os dados de treino, temos erro de:")
+  trainError <- 100*(1-mean(train$idZ == predict(mylogit)))
+  
+  #print("Com SVM, com os dados de teste, temos erro de:")
+  testError <- 100*(1-mean(test$idZ == predict(mylogit,dplyr::select(test,-idZ))))
+  
+  
+  return (c(kernelType,trainError,testError))
+  
+}
+
+
+
+#performs a variety of ML tests on the WIFI dataset
+#
+#Dataset MUST be in the following form, as outputed by function prepareData:
+#
+#
+#
+#RSSID1 RSSID2 RSSID3 ...   idZ (id of Zone in which that measure was made)
+# -30     -39    -29         2
+# -20     -90    -20         3 
+#  ...
+#
+#
+#
+#
+#
+
+tests <- function(data){
+  
+  tidyData <- data
+  
+  # Scaling data
+  maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
+  mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
+  scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
+  #concatenate with response vector again 
+  scaled$idZ <- tidyData$idZ
+  
+  # Train-test random splitting for machine learning
+  # 30% for tests and the rest for training
+  
+  set.seed(1)
+  index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
+  #Train and test UNESCALED
+  train <- tidyData[index,]
+  test <- tidyData[-index,]
+  #Train and test SCALED
+  train_s <- scaled[index,]
+  test_s <- scaled[-index,]
+  
+  
+  
+  #Train and test UNESCALED
+  #train<- dplyr::filter(tidyData,idZ==5 |idZ==4)
+  #test<- dplyr::filter(tidyData,idZ==6)
+  #test$idZ <- c(4,4,4,4,4)
+  
+  #train_s<- dplyr::filter(scaled,idZ==5 |idZ==4)
+  #test_s<- dplyr::filter(scaled,idZ==6)
+  #test_s$idZ <- c(4,4,4,4,4)
+  #Now, we will apply many diferent machine learning algorithms and see which yelds the best classification accuracy
+  
+  
+  
+  
+  #LOGISTIC REGRESSION 
+  
+  #number of classes
+  #labels <- 2
+  
+  
+  #trainX <- select(train,-idZ)
+  #testX <- select(test,-idZ)
+  #trainY <- select(train,idZ)
+  #testY <- select(test,idZ)
+  
+  #error <- oneVsAll(trainX,trainY,labels,testX,testY)
+  
+  
+  
+  #NEURALNETWORK
+  
+  
+  # NN training
+  library(neuralnet)
+  
+  newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
+  train_sn <- train_s
+  test_sn <- test_s
+  
+  names(train_sn) <- newNames
+  names(test_sn) <- newNames
+  
+  
+  #names(train_s) <- paste("(",names(train_s),")",sep="")
+  #names(train_s)  <-  gsub(":","",names(train_s))
+  
+  colnames(train_sn)[length(train_sn)] <- "idZ"
+  n <- names(train_sn)
+  f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+  
+  #nn <- neuralnet(f,data=as.matrix(train_sn),hidden=25,linear.output=FALSE,threshold=0.01)
+  
+  # Visual plot of the model
+  #plot(nn)
+  
+  
+  
+  
+  #SUPPORT VECTOR MACHINE
+  
+  #We must separate data into X matrix for the features and Y for the response vector with the classes
+  suppressWarnings(attach(train_s))
+  xi<- subset(train_s,select= - idZ)
+  yi <- idZ
+  
+  
+  #TEST IN EACH KERNEL
+  res <- c("KernelType","Train Error","Test Error")
+  
+  
+  kernelType <- "linear" 
+  mylogit <-svm(xi,yi,kernel = kernelType)
+  res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  kernelType <- "polynomial" 
+  mylogit <-svm(xi,yi,kernel = kernelType)
+  res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  kernelType <- "radial" 
+  mylogit <-svm(xi,yi,kernel = kernelType)
+  res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  kernelType <- "sigmoid" 
+  mylogit <-svm(xi,yi,kernel = kernelType)
+  res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  
+  assign("res",res,.GlobalEnv)
+  
+  #K-nearest neighbours
+  knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
+  
+  
+  #plot(knnTrain)
+  
+  
+  cat("INFORMACOES DO KNN")
+  print(summary(knnTrain))
+  
+  cat("Com KNN, com os dados de treino, temos erro de:")
+  
+  print(100*(1-mean(train_s$idZ == predict(knnTrain,train_s))))
+  
+  cat("Com KNN, com os dados de teste, temos erro de:")
+  
+  print(100*(1-mean(test_s$idZ == predict(knnTrain,test_s))))
+  
+  
+  
+  
+  
+}
+
+
 
 
 #apply the kalman filter on a vector of RSSI measures
