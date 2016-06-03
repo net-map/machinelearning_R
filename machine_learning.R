@@ -51,31 +51,29 @@ tests <- function(train_s,test_s){
   
  
   #NEURALNETWORK
+
+
+  
+  library(nnet)
+
+  #cross validation for number of neurons in hidden layer
+  nnError <- NULL
+  for(neuron in 10:11){
+    
+      nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
   
   
-  # NN training
-  library(neuralnet)
+      trainError <- 100*(1-mean(train$idZ == predict(nn2,train,type="class")))
+      testError <- 100*(1-mean(test$idZ == predict(nn2,test,type="class")))
+      
+      nnError <- c(trainError,testError)
+      print(c(neuron,trainError,testError))
+  }
   
-  newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
-  train_sn <- train_s
-  test_sn <- test_s
-  
-  names(train_sn) <- newNames
-  names(test_sn) <- newNames
-  
-  
-  #names(train_s) <- paste("(",names(train_s),")",sep="")
-  #names(train_s)  <-  gsub(":","",names(train_s))
-  
-  colnames(train_sn)[length(train_sn)] <- "idZ"
-  n <- names(train_sn)
-  f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
-  
- train_sn<- train_sn + 1
-  
-# nn <- neuralnet(f,data=as.matrix(train_sn),hidden=25,linear.output=FALSE,threshold=0.01)
-  
- #assign("nn",nn,.GlobalEnv)
+      
+      
+      
+  assign("nn",nn2,.GlobalEnv)
  
   # Visual plot of the model
   #plot(nn)
@@ -98,6 +96,7 @@ tests <- function(train_s,test_s){
   kernelType <- "linear" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  SVMerror <- printSVMResults(train_s,test_s,mylogit,kernelType)[2:3]
   kernelType <- "polynomial" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
@@ -109,6 +108,9 @@ tests <- function(train_s,test_s){
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
   
   assign("res",res,.GlobalEnv)
+  
+  
+  
   
   #K-nearest neighbours
   knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
@@ -123,13 +125,18 @@ tests <- function(train_s,test_s){
   cat("Com KNN, com os dados de treino, temos erro de:")
   
   print(100*(1-mean(train_s$idZ == predict(knnTrain,train_s))))
-  
+  trainError <- 100*(1-mean(train_s$idZ == predict(knnTrain,train_s)))
+  #print(100*classError(train_s$idZ,predict(knnTrain,train_s))$errorRate)
   cat("Com KNN, com os dados de teste, temos erro de:")
   
   print(100*(1-mean(test_s$idZ == predict(knnTrain,test_s))))
+  testError <- 100*(1-mean(test_s$idZ == predict(knnTrain,test_s)))
+  #print(100*classError(test_s$idZ,predict(knnTrain,test_s))$errorRate)
+  
+  KNNerror <- c(trainError,testError)
   
   
-  
+  return (c(nnError,KNNerror,SVMerror))
   
   
 }

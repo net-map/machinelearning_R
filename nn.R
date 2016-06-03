@@ -1,6 +1,29 @@
 # Set a seed
 set.seed(500)
 
+
+newNames <- replicate(length(train_s), paste(sample(LETTERS, 10, replace=TRUE), collapse=""))
+train_sn <- train_s
+test_sn <- test_s
+
+names(train_sn) <- newNames
+names(test_sn) <- newNames
+
+
+#names(train_s) <- paste("(",names(train_s),")",sep="")
+#names(train_s)  <-  gsub(":","",names(train_s))
+
+colnames(train_sn)[length(train_sn)] <- "idZ"
+n <- names(train_sn)
+f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+
+train_sn<- train_sn + 1
+test_sn<- test_sn + 1
+#nn <- neuralnet(f,train_sn,hidden=10,linear.output=FALSE,threshold=0.01)
+
+str(xi)
+str(yi)
+
 library(MASS)
 
 data <- college

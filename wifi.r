@@ -12,16 +12,18 @@ library(kknn)
 
 
 #Name of facility
-facility <- "scopuss"
+facility <- "lira house"
 #user id
 user <- 2
 
 #rawData1 <- getMLdata(facility,user)
 
-#suppressWarnings( tidyData1 <- prepareData(rawData1))
+suppressWarnings( tidyData1 <- prepareData(rawData1))
 
 #zones id is a factor, not a number!
-#tidyData1$idZ <- as.factor(tidyData1$idZ)
+tidyData1$idZ <- as.factor(tidyData1$idZ)
+
+
 #rawData2 <- getMLdata("scopusadria",1)
 #tidyData3 <- prepareData(rawData2)
 #tidyData3$idZ <- c(9,9,9,9)
@@ -43,18 +45,18 @@ bol <- tidyData1 == -120
 for (col in  2:ncol(bol)){
  
   if( mean( bol[,col]) > .90){
-    tidyData1[col]<-NULL
+    tidyData1[[col]]<-NULL
     
   }
   
 }
 
 
-tidyData2 <- merge(tidyData1,tidyData3,all=TRUE)
+#tidyData2 <- merge(tidyData1,tidyData3,all=TRUE)
 
-tidyData2[is.na(tidyData2)] <- -120
+#tidyData2[is.na(tidyData2)] <- -120
 
-tidyData <- tidyData2
+tidyData <- tidyData1
 
 
 # Scaling data
@@ -67,7 +69,7 @@ scaled$idZ <- tidyData$idZ
 # Train-test random splitting for machine learning
 # 30% for tests and the rest for training
 
-set.seed(18687685)
+#set.seed(18687685)
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
@@ -88,8 +90,10 @@ test_s <- scaled[-index,]
 
 
 #tests galore!
-suppressWarnings(tests(train,test))
-
+listValues <- NULL
+for (i in 5:nrow(train)){
+    listValues<- rbind(listValues,invisible(tests(train[1:i,],test)))
+}
 
 
 
