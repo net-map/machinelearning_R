@@ -16,7 +16,7 @@ facility <- "lira house"
 #user id
 user <- 2
 
-#rawData1 <- getMLdata(facility,user)
+rawData1 <- getMLdata(facility,user)
 
 suppressWarnings( tidyData1 <- prepareData(rawData1))
 
@@ -45,7 +45,7 @@ bol <- tidyData1 == -120
 for (col in  2:ncol(bol)){
  
   if( mean( bol[,col]) > .90){
-    tidyData1[[col]]<-NULL
+    #tidyData1[[col]]<-NULL
     
   }
   
@@ -70,7 +70,7 @@ scaled$idZ <- tidyData$idZ
 # 30% for tests and the rest for training
 
 #set.seed(18687685)
-index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
+index <- sample(1:nrow(tidyData),round(0.6*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
 test <- tidyData[-index,]
@@ -81,19 +81,52 @@ test_s <- scaled[-index,]
 
 
 ##########################################################################################
+#
+#
+#  Prepare test dataset to be tested
+#  We need to make sure that it has the same columns of the train dataset
+#  We take out any RSSIs not present in train dataset and complete the test dataset with RSSIs (i.e. columns) present only in train dataset
+#
+#
 
 
+train_s <- filter(scaled,idZ != 12)
+test_s <- filter(scaled,idZ == 12)
+test_s$idZ <- c(7,7,7,7,7)
 
+names <- intersect(colnames(train),colnames(test))
 
+test_s2<-merge(train_s[1,],test_s,by=names,all.y=TRUE)
 
+#index1 <- grep(".x",names(test_s2))
 
+#index2 <- grep(".y",names(test_s2))
 
+setdiff(names(train_s),names(test_s2))
 
+#test_s2 <- test_s2[,-index1]
+#colnames(test_s2)[index2] <- sub(".y","",colnames(test_s2)[index2])
+
+#test_s2 <- test_s2[,colSums(is.na(test_s2))<nrow(test_s2)]
+
+######################################################################################
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 #tests galore!
 listValues <- NULL
-for (i in 5:nrow(train)){
-    listValues<- rbind(listValues,invisible(tests(train[1:i,],test)))
+for (i in 10:nrow(train_s)){
+    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s2)))
 }
+
 
 
 

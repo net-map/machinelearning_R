@@ -60,20 +60,20 @@ tests <- function(train_s,test_s){
   nnError <- NULL
   for(neuron in 10:11){
     
-      nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
+      #nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
   
   
-      trainError <- 100*(1-mean(train$idZ == predict(nn2,train,type="class")))
-      testError <- 100*(1-mean(test$idZ == predict(nn2,test,type="class")))
+      #trainError <- 100*(1-mean(train$idZ == predict(nn2,train,type="class")))
+      #testError <- 100*(1-mean(test$idZ == predict(nn2,test,type="class")))
       
-      nnError <- c(trainError,testError)
-      print(c(neuron,trainError,testError))
+      #nnError <- c(trainError,testError)
+      #print(c(neuron,trainError,testError))
   }
   
+      nnError <- 0
       
       
-      
-  assign("nn",nn2,.GlobalEnv)
+  #assign("nn",nn2,.GlobalEnv)
  
   # Visual plot of the model
   #plot(nn)
