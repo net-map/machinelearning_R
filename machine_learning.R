@@ -84,11 +84,14 @@ tests <- function(train_s,test_s){
   #SUPPORT VECTOR MACHINE
   
   #We must separate data into X matrix for the features and Y for the response vector with the classes
-  suppressWarnings(attach(train_s))
+  #suppressWarnings(attach(train_s))
+  #detach(train_s)
   xi<- subset(train_s,select= - idZ)
-  yi <- idZ
+  yi <- train_s$idZ
   
-  
+  print(yi)
+  print(dim(yi))
+  print(dim(xi))
   #TEST IN EACH KERNEL
   res <- c("KernelType","Train Error","Test Error")
   
@@ -113,7 +116,7 @@ tests <- function(train_s,test_s){
   
   
   #K-nearest neighbours
-  knnTrain<-train.kknn(idZ ~. , kmax=4,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
+  knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
   
   
   #plot(knnTrain)

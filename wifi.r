@@ -69,7 +69,19 @@ scaled$idZ <- tidyData$idZ
 # Train-test random splitting for machine learning
 # 30% for tests and the rest for training
 
-#set.seed(18687685)
+set.seed.alpha <- function(x) {
+  require("digest")
+  hexval <- paste0("0x",digest(x,"crc32"))
+  intval <- type.convert(hexval) %% .Machine$integer.max
+  set.seed(intval)
+}
+
+
+
+
+set.seed.alpha("The artist is the creator of beautiful things")
+
+
 index <- sample(1:nrow(tidyData),round(0.6*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
@@ -88,21 +100,26 @@ test_s <- scaled[-index,]
 #  We take out any RSSIs not present in train dataset and complete the test dataset with RSSIs (i.e. columns) present only in train dataset
 #
 #
+attach(train_s)
+train_s[idZ==12,]$idZ <- 7
+detach(train_s)
+#train_s <- filter(train_s,idZ != 12)
+attach(test_s)
+test_s[idZ==12,]$idZ <- 7
+detach(test_s)
+#test_s <- filter(test_s,idZ != 12)
+#test_s$idZ <- c(7,7,7,7,7)
 
+#names <- intersect(colnames(train),colnames(test))
 
-train_s <- filter(scaled,idZ != 12)
-test_s <- filter(scaled,idZ == 12)
-test_s$idZ <- c(7,7,7,7,7)
+#test_s2<-merge(train_s[1,],test_s,by=names,all.y=TRUE)
 
-names <- intersect(colnames(train),colnames(test))
-
-test_s2<-merge(train_s[1,],test_s,by=names,all.y=TRUE)
 
 #index1 <- grep(".x",names(test_s2))
 
 #index2 <- grep(".y",names(test_s2))
 
-setdiff(names(train_s),names(test_s2))
+#setdiff(names(train_s),names(test_s2))
 
 #test_s2 <- test_s2[,-index1]
 #colnames(test_s2)[index2] <- sub(".y","",colnames(test_s2)[index2])
@@ -123,8 +140,9 @@ setdiff(names(train_s),names(test_s2))
 #
 #tests galore!
 listValues <- NULL
-for (i in 10:nrow(train_s)){
-    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s2)))
+for (i in 5:nrow(train_s)){
+    print (i)
+    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
 }
 
 
