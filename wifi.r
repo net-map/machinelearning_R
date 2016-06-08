@@ -79,10 +79,10 @@ set.seed.alpha <- function(x) {
 
 
 
-set.seed.alpha("The artist is the creator of beautiful things")
+set.seed.alpha("O lira eh muito rico")
 
 
-index <- sample(1:nrow(tidyData),round(0.6*nrow(tidyData)))
+index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
 test <- tidyData[-index,]
@@ -140,14 +140,23 @@ detach(test_s)
 #
 #tests galore!
 listValues <- NULL
-for (i in 5:nrow(train_s)){
-    print (i)
+for (i in 3:nrow(train_s)){
     listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
 }
 
 
+x <- seq(1,22,1)
+y <- 1:30
+
+#data to be plotted and fited
+data <- as.integer(listValues[,4])
+
+#model as n degree polynomial
+model <- lm(data~poly(x,2))
 
 
+plot(data,col="green")
 
-
-
+xx <- seq(0,22, length.out=250)
+lines(xx,predict(model,data.frame(x=xx)))
+points(data)

@@ -197,9 +197,10 @@ kalmanFilter <- function (X){
     
   }
   
-  #plot(unlist(outMu[1,]),type="l",ylim = c(-70,-20))
+  #plot(unlist(outMu[1,]),type="l",ylim = c(-70,-20),xlab = "# de Iterações", ylab="Potência(dB)" )
   #points(X)
-  
+  #cat ("Press [enter] to continue")
+  #line <- readline()
   
   return (outMu[length(outMu)])
   
