@@ -140,23 +140,23 @@ detach(test_s)
 #
 #tests galore!
 listValues <- NULL
-for (i in 3:nrow(train_s)){
+for (i in 7:nrow(train_s)){
     listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
 }
 
 
-x <- seq(1,22,1)
+x <- seq(1,nrow(listValues[5:nrow(listValues),]),1)
 y <- 1:30
 
 #data to be plotted and fited
-data <- as.integer(listValues[,4])
+data <- as.integer(listValues[5:nrow(listValues),2])
 
 #model as n degree polynomial
 model <- lm(data~poly(x,2))
 
 
-plot(data,col="green")
+plot(data,col="blue",ylab = "Erro percentual",xlab="# de Pontos de Treino")
 
-xx <- seq(0,22, length.out=250)
+xx <- seq(0,13, length.out=250)
 lines(xx,predict(model,data.frame(x=xx)))
 points(data)
