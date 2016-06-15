@@ -16,7 +16,7 @@ facility <- "lira house"
 #user id
 user <- 2
 
-rawData1 <- getMLdata(facility,user)
+#rawData1 <- getMLdata(facility,user)
 
 suppressWarnings( tidyData1 <- prepareData(rawData1))
 
@@ -40,23 +40,22 @@ tidyData1$idZ <- as.factor(tidyData1$idZ)
 #
 #####################################################################################################
 
-#the following code removes entries with 90% of -120 measures, i.e. the signal was to weak to me measured
+#the following code removes entries (columns of the same AP) with 90% of -120 measures, i.e. the signal was to weak to me measured reliably
 bol <- tidyData1 == -120
+discard <- NULL
 for (col in  2:ncol(bol)){
  
   if( mean( bol[,col]) > .90){
-    #tidyData1[[col]]<-NULL
-    
+    discard <- cbind(discard,col)
   }
   
 }
 
+#remove all entries from discard list
+#tidyData1 <- tidyData1[,-discard] 
 
-#tidyData2 <- merge(tidyData1,tidyData3,all=TRUE)
 
-#tidyData2[is.na(tidyData2)] <- -120
-
-tidyData <- tidyData1
+#tidyData <- abs(tidyData1)
 
 
 # Scaling data
@@ -79,8 +78,8 @@ set.seed.alpha <- function(x) {
 
 
 
-set.seed.alpha("O lira eh muito rico")
-
+set.seed.alpha("3")
+set.seed(1138)
 
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
@@ -145,6 +144,12 @@ for (i in 7:nrow(train_s)){
 }
 
 
+erroFinal <- rbind(erroFinal,listValues[nrow(listValues),][c(3,5)])
+
+
+
+
+
 x <- seq(1,nrow(listValues[5:nrow(listValues),]),1)
 y <- 1:30
 
@@ -160,3 +165,6 @@ plot(data,col="blue",ylab = "Erro percentual",xlab="# de Pontos de Treino")
 xx <- seq(0,13, length.out=250)
 lines(xx,predict(model,data.frame(x=xx)))
 points(data)
+
+
+View(listValues)
