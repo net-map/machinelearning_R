@@ -145,17 +145,19 @@ for (i in 3:nrow(train_s)){
 }
 
 
-x <- seq(1,22,1)
+row <- nrow(listValues)
+
+x <- seq(1,row,1)
 y <- 1:30
 
 #data to be plotted and fited
-data <- as.integer(listValues[,4])
+data <- as.integer(listValues[,5])
 
 #model as n degree polynomial
-model <- lm(data~poly(x,2))
+model <- lm(data~poly(x,3))
 
 
-plot(data,col="green")
+plot(data,col="red",xlab = "# de Pontos de Treino",ylab="Erro Percentual")
 
 xx <- seq(0,22, length.out=250)
 lines(xx,predict(model,data.frame(x=xx)))

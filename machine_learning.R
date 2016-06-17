@@ -5,6 +5,25 @@ library(jsonlite)
 library(reshape2)
 library(e1071)
 library(kknn)
+library(cluster)
+
+
+
+
+#computes manhattan distance (taxi-cab) between two vectors
+manhattanDist <- function (v1, v2){
+  
+  return (sum(abs(v1-v2)))
+  
+}
+
+#computes euclidean distance
+euclideanDist <- function (v1, v2){
+  
+  return (sqrt(sum((v1-v2)^2)))
+  
+}
+
 
 
 #t.test(College$PhD,College$Grad.Rate) para testar independencia
@@ -114,7 +133,52 @@ tests <- function(train_s,test_s){
   
   
   
+  # NN - Distance
   
+  attach(train_s)
+  #split dataset by groups of same idZ
+  groups <- split(train_s,idZ)
+  detach(train_s)
+  
+  
+  testX <- subset(test_s,select=- idZ)
+  testY <- test_s$idZ
+  
+  
+  
+  
+  anslist <- NULL
+  
+  
+  
+  for (group in groups[-3]) {
+      
+    
+    
+    group_idz <- select(group,-idZ)
+    
+    temp <- matrix(nrow=nrow(testX))
+    
+    for( i in 1:nrow(testX) ){
+      
+          temp[i] <- sum(as.matrix(dist(rbind(testX[i,],group_idz),method = "manhattan"))[,1])
+      
+    }
+    
+     anslist<-cbind(anslist,temp)
+    
+     
+  }
+  
+  
+   bol <- anslist[,1] < anslist[,2]
+   
+   manhattanError <- 100* (1 -  mean(bol == (testY == 7)))
+  
+  
+   
+   
+   
   #K-nearest neighbours
   knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
   
@@ -139,7 +203,7 @@ tests <- function(train_s,test_s){
   KNNerror <- c(trainError,testError)
   
   
-  return (c(nnError,KNNerror,SVMerror))
+  return (c(nnError,KNNerror,SVMerror,manhattanError))
   
   
 }
