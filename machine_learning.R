@@ -117,6 +117,7 @@ tests <- function(train_s,test_s){
   
   kernelType <- "linear" 
   mylogit <-svm(xi,yi,kernel = kernelType)
+  resultsSVM <- predict(mylogit,dplyr::select(test_s,-idZ))
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
   SVMerror <- printSVMResults(train_s,test_s,mylogit,kernelType)[2:3]
   kernelType <- "polynomial" 
@@ -128,6 +129,9 @@ tests <- function(train_s,test_s){
   kernelType <- "sigmoid" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  
+  
+  
   
   assign("res",res,.GlobalEnv)
   
@@ -150,17 +154,29 @@ tests <- function(train_s,test_s){
   anslist <- NULL
   
   
+  labelGroups <- vector(mode="numeric",length=(size(groups)[2]-1))
+  
+  #count of group
+  count <- 1
   
   for (group in groups[-3]) {
-      
+     
     
+    #transform from factor to number
+    group$idZ <- as.numeric(as.character(group$idZ))
     
+    #get idZ number of group 
+    labelGroups[count]<-group$idZ[1]
+    
+    count<- count +1
+    
+    #for each group matrix remove idZ as we dont need it anymore
     group_idz <- select(group,-idZ)
     
     temp <- matrix(nrow=nrow(testX))
     
     for( i in 1:nrow(testX) ){
-      
+          #sum manhatan distances between test vector and each vector from group matrix
           temp[i] <- sum(as.matrix(dist(rbind(testX[i,],group_idz),method = "manhattan"))[,1])
       
     }
@@ -171,9 +187,14 @@ tests <- function(train_s,test_s){
   }
   
   
-   bol <- anslist[,1] < anslist[,2]
+   #get the position of min value in each row
+   minList <- apply(anslist,1, function(x) which.min(x) )  
    
-   manhattanError <- 100* (1 -  mean(bol == (testY == 7)))
+   #get for each result the label it corresponds to
+   resultsMAND <- labelGroups[minList]
+   
+   #compute error
+   manhattanError <- 100* (1 -  mean(resultsMAND == testY))
   
   
    
@@ -200,11 +221,37 @@ tests <- function(train_s,test_s){
   testError <- 100*(1-mean(test_s$idZ == predict(knnTrain,test_s)))
   #print(100*classError(test_s$idZ,predict(knnTrain,test_s))$errorRate)
   
+  resultsKNN <- predict(knnTrain,test_s)
+  
   KNNerror <- c(trainError,testError)
   
   
-  return (c(nnError,KNNerror,SVMerror,manhattanError))
   
+  
+  print("RESULTADOS PARA COMPARACAO")
+  print("RESULTADOS KNN")
+  print(resultsKNN)
+  print("RESULTADOS MANHATTAN")
+  print(resultsMAND)
+  print("RESULTADOS SVM")
+  print(resultsSVM)
+  print("RESULTADOS ESPERADOS")
+  print (test_s$idZ)
+  
+  
+  
+  tabela <- cbind(as.numeric(as.character(resultsKNN)),as.numeric(resultsMAND),as.numeric(as.character(resultsSVM)))
+ 
+  #vote among results for the most recurrent label 
+  
+  resultsVote <- apply(tabela,1, function(x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])) ) 
+  #compute error of vote
+  
+  voteError <- 100*(1-mean(test_s$idZ==resultsVote))
+  
+  
+  return (c(KNNerror,SVMerror,manhattanError,voteError))
+  #return (c(resultsKNN,resultsMAND,resultsSVM))
   
 }
 
