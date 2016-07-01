@@ -84,7 +84,7 @@ set.seed.alpha <- function(x) {
 
 
 set.seed.alpha("3")
-set.seed(1138)
+set.seed(10009)
 
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
