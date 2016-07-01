@@ -58,6 +58,11 @@ for (col in  2:ncol(bol)){
 #tidyData <- abs(tidyData1)
 
 
+# setwd("~/Documents/netmap")
+# data <- read.csv("trainingData.csv",header = TRUE,sep = ",")
+# datap <- dplyr::select(data,WAP001:WAP518,SPACEID)
+
+
 # Scaling data
 maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
 mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
@@ -139,8 +144,8 @@ detach(test_s)
 #
 #tests galore!
 listValues <- NULL
-for (i in 7:nrow(train_s)){
-    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
+for (i in 7:nrow(train)){
+    listValues<- rbind(listValues,invisible(tests(train[1:i,],test)))
 }
 
 
