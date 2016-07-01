@@ -10,6 +10,16 @@ library(kknn)
 
 
 
+#UCI DATASET PREPARATION
+dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
+#datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
+fdataset<-filter(dataset,SPACEID%in%c(102,103,104,105,106,107,108,109,110,111))
+names(fdataset)[525] <- "idZ"
+tidyData <- select(fdataset,WAP001:WAP520,idZ)
+tidyData$idZ <- as.factor(tidyData$idZ)
+#
+
+
 
 #Name of facility
 facility <- "lira house"
@@ -18,7 +28,7 @@ user <- 2
 
 #rawData1 <- getMLdata(facility,user)
 
-suppressWarnings( tidyData1 <- prepareData(rawData1))
+suppressWarnings( tidyData1 <- prepareData(rawData1) )
 
 #zones id is a factor, not a number!
 tidyData1$idZ <- as.factor(tidyData1$idZ)
@@ -41,18 +51,19 @@ tidyData1$idZ <- as.factor(tidyData1$idZ)
 #####################################################################################################
 
 #the following code removes entries (columns of the same AP) with 90% of -120 measures, i.e. the signal was to weak to me measured reliably
-bol <- tidyData1 == -120
+
+bol <- tidyData == 100
 discard <- NULL
-for (col in  2:ncol(bol)){
+for (col in  1:ncol(bol)){
  
-  if( mean( bol[,col]) > .90){
+  if( mean( bol[,col]) > .95){
     discard <- cbind(discard,col)
   }
   
 }
 
 #remove all entries from discard list
-#tidyData1 <- tidyData1[,-discard] 
+tidyData <- tidyData[,-discard] 
 
 
 #tidyData <- abs(tidyData1)
@@ -84,9 +95,9 @@ set.seed.alpha <- function(x) {
 
 
 set.seed.alpha("3")
-set.seed(10009)
+set.seed(989899)
 
-index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
+index <- sample(1:nrow(tidyData),round(0.9*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
 test <- tidyData[-index,]
@@ -94,7 +105,8 @@ test <- tidyData[-index,]
 train_s <- scaled[index,]
 test_s <- scaled[-index,]
 
-
+tests(train,test)
+tests(train_s,test_s)
 
 ##########################################################################################
 #

@@ -119,7 +119,6 @@ tests <- function(train_s,test_s){
   mylogit <-svm(xi,yi,kernel = kernelType)
   resultsSVM <- predict(mylogit,dplyr::select(test_s,-idZ))
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
-  SVMerror <- printSVMResults(train_s,test_s,mylogit,kernelType)[2:3]
   kernelType <- "polynomial" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
@@ -133,8 +132,15 @@ tests <- function(train_s,test_s){
   
   
   
+  
   assign("res",res,.GlobalEnv)
   
+  
+  #get kernel with minimal error
+  pos <- which.min(res[2:nrow(res),3])
+  
+  
+  SVMerror <- res[pos+1,]
   
   
   # NN - Distance
