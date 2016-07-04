@@ -73,13 +73,17 @@ tidyData <- tidyData[,-discard]
 # data <- read.csv("trainingData.csv",header = TRUE,sep = ",")
 # datap <- dplyr::select(data,WAP001:WAP518,SPACEID)
 
-
 # Scaling data
-maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
-mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
-scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
+
+
+preProc  <- caret::preProcess(tidyData)
+scaled <- predict(preProc, tidyData)
+
+#maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
+#mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
+#scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
 #concatenate with response vector again 
-scaled$idZ <- tidyData$idZ
+#scaled$idZ <- tidyData$idZ
 
 # Train-test random splitting for machine learning
 # 30% for tests and the rest for training

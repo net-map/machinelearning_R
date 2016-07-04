@@ -6,7 +6,9 @@ library(reshape2)
 library(e1071)
 library(kknn)
 library(cluster)
-
+library(caret)
+library(nnet)
+library(neuralnet)
 
 
 
@@ -73,12 +75,20 @@ tests <- function(train_s,test_s){
 
 
   
-  library(nnet)
+  
 
   #cross validation for number of neurons in hidden layer
   nnError <- NULL
   for(neuron in 10:11){
     
+     
+    
+    #  n <- names(train_s)
+    #  f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+      
+     # nn <- neuralnet(f,data=train_s,hidden=c(5,3),linear.output=FALSE) 
+      
+      
       #nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
   
   
@@ -119,6 +129,7 @@ tests <- function(train_s,test_s){
   mylogit <-svm(xi,yi,kernel = kernelType)
   resultsSVM <- predict(mylogit,dplyr::select(test_s,-idZ))
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
+  SVMerror <- printSVMResults(train_s,test_s,mylogit,kernelType)[2:3]
   kernelType <- "polynomial" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
@@ -132,15 +143,8 @@ tests <- function(train_s,test_s){
   
   
   
-  
   assign("res",res,.GlobalEnv)
   
-  
-  #get kernel with minimal error
-  pos <- which.min(res[2:nrow(res),3])
-  
-  
-  SVMerror <- res[pos+1,]
   
   
   # NN - Distance
