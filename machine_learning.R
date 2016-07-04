@@ -51,6 +51,19 @@ printSVMResults <- function(train,test,mylogit,kernelType){
   
 }
 
+MHmakeRandomString <- function(n, lenght)
+{
+  randomString <- c(1:n)                  # initialize vector
+  for (i in 1:n)
+  {
+    randomString[i] <- paste(sample(c(0:9, letters, LETTERS),
+                                    lenght, replace=TRUE),
+                             collapse="")
+  }
+  return(randomString)
+}
+
+
 
 #performs a variety of ML tests on the WIFI dataset
 #
@@ -81,17 +94,27 @@ tests <- function(train_s,test_s){
   nnError <- NULL
   for(neuron in 10:11){
     
-     
     
-    #  n <- names(train_s)
-    #  f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+    
+      n <- names(train_s) 
+      attach(train_s)  
+      names(subset(train_s,select=-idZ)) <- MHmakeRandomString(length(train_s)-2,6)
+      detach(train_s)
       
-     # nn <- neuralnet(f,data=train_s,hidden=c(5,3),linear.output=FALSE) 
+      
+      f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
+      
+      f <- as.formula(paste("idZ103+ idZ104 +idZ105+ idZ106 +idZ107 +idZ108+ idZ109+ idZ110+ idZ111~", paste(n[!n %in% "idZ"], collapse = " + ")))
+      
+      f <- as.formula(paste("idZ8 + idZ12~", paste(n[!n %in% "idZ"], collapse = " + ")))
+      
+      teste <- model.matrix(~.,data=train_s)
+     nn <- neuralnet(f,data=teste,hidden=c(5,3),linear.output=FALSE) 
       
       
       #nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
   
-  
+      
       #trainError <- 100*(1-mean(train$idZ == predict(nn2,train,type="class")))
       #testError <- 100*(1-mean(test$idZ == predict(nn2,test,type="class")))
       

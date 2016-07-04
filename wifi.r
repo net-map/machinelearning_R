@@ -101,7 +101,7 @@ set.seed.alpha <- function(x) {
 set.seed.alpha("3")
 set.seed(989899)
 
-index <- sample(1:nrow(tidyData),round(0.9*nrow(tidyData)))
+index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
 train <- tidyData[index,]
 test <- tidyData[-index,]
