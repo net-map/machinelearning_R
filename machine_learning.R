@@ -88,41 +88,53 @@ tests <- function(train_s,test_s){
 
 
   
-  
-
-  #cross validation for number of neurons in hidden layer
-  nnError <- NULL
-  for(neuron in 10:11){
+      
+      #transforms factors in binary dummy vectors
+      nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
+      
+      addq <- function(x) paste0("`", x, "`")
+      #adds `x` to every names in data
+      names(nnData) <- addq(names(nnData))
+      
+      
+      n <- names(nnData)
     
+      #gets indexes of dummy id columns 
+      indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
+      
+      lhseq <- paste(names(nnData[,indexId]),collapse="+")
+      
+      rhseq <- paste(names(nnData[,-indexId]),collapse="+")
+      
+      #creates formula
+      f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
+      
+      #for some reason, remove quotes and it works
+      nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
+      
+      
+      #TRAIN neuralnet!
+      nn <- neuralnet(f,data=nnData,hidden=c(5,3),linear.output=FALSE) 
+      
+      nnDataResponse <- nnData[,(length(nnData)-2):(length(nnData))]
+      nnDatatestResponse <- nnDatatest[,(length(nnDatatest)-2):(length(nnDatatest))]
+      
+      
+      trainRes <-  round(neuralnet::compute(nn,nnData[,1:(length(nnData)-3)])$net.result)
+      testRes <- round( neuralnet::compute(nn,nnDatatest[,1:(length(nnDatatest)-3)])$net.result)
+      
     
-    
-      n <- names(train_s) 
-      attach(train_s)  
-      names(subset(train_s,select=-idZ)) <- MHmakeRandomString(length(train_s)-2,6)
-      detach(train_s)
       
       
-      f <- as.formula(paste("idZ ~", paste(n[!n %in% "idZ"], collapse = " + ")))
-      
-      f <- as.formula(paste("idZ103+ idZ104 +idZ105+ idZ106 +idZ107 +idZ108+ idZ109+ idZ110+ idZ111~", paste(n[!n %in% "idZ"], collapse = " + ")))
-      
-      f <- as.formula(paste("idZ8 + idZ12~", paste(n[!n %in% "idZ"], collapse = " + ")))
-      
-      teste <- model.matrix(~.,data=train_s)
-     nn <- neuralnet(f,data=teste,hidden=c(5,3),linear.output=FALSE) 
       
       
-      #nn2 <- suppressMessages(nnet(idZ ~., data=train_s ,size= neuron))
-  
-      
-      #trainError <- 100*(1-mean(train$idZ == predict(nn2,train,type="class")))
-      #testError <- 100*(1-mean(test$idZ == predict(nn2,test,type="class")))
+      #trainError <- 100*(1-mean(train_s$idZ == predict(nn,train_s,type="class")))
+      #testError <- 100*(1-mean(test_s$idZ == predict(nn,test_s,type="class")))
       
       #nnError <- c(trainError,testError)
       #print(c(neuron,trainError,testError))
-  }
   
-      nnError <- 0
+  
       
       
   #assign("nn",nn2,.GlobalEnv)
