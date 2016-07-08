@@ -5,7 +5,10 @@ library(jsonlite)
 library(reshape2)
 library(e1071)
 library(kknn)
-
+library (caret)
+library(cluster)
+library(nnet)
+library(neuralnet)
 
 
 
@@ -110,7 +113,10 @@ train_s <- scaled[index,]
 test_s <- scaled[-index,]
 
 tests(train,test)
-tests(train_s,test_s)
+
+modelVector <- train_s[1,]
+
+models <-tests(train_s,test_s)
 
 ##########################################################################################
 #
@@ -122,15 +128,18 @@ tests(train_s,test_s)
 #
 
 
+
+
+
 attach(train_s)
 train_s[idZ==12,]$idZ <- 7
+train_s$idZ <- factor(train_s$idZ)
 detach(train_s)
-#train_s <- filter(train_s,idZ != 12)
 attach(test_s)
-test_s[idZ==12,]$idZ <- 7
+id12 <- which(test_s$idZ==12)
+test_s[id12,]$idZ <- c(7)
+test_s$idZ <- factor(test_s$idZ)
 detach(test_s)
-#test_s <- filter(test_s,idZ != 12)
-#test_s$idZ <- c(7,7,7,7,7)
 
 #names <- intersect(colnames(train),colnames(test))
 

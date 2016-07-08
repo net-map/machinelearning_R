@@ -65,6 +65,23 @@ MHmakeRandomString <- function(n, lenght)
 
 
 
+
+#Use trained models to provide a single classification answer from testVector
+#
+#
+#
+#
+#
+#RSSID1 RSSID2 RSSID3 ...   idZ (id of Zone in which that measure was made)
+# -30     -39    -29         2
+singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
+  
+  
+  
+  
+}
+
+
 #performs a variety of ML tests on the WIFI dataset
 #
 #Dataset MUST be in the following form, as outputed by function prepareData:
@@ -91,16 +108,18 @@ tests <- function(train_s,test_s){
       
       #transforms factors in binary dummy vectors
       nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
+      nnDatatest <- cbind(dplyr::select(test_s,-idZ),nnet::class.ind(test_s$idZ))
       
       addq <- function(x) paste0("`", x, "`")
-      #adds `x` to every names in data
+      #adds `x` to every name in data
       names(nnData) <- addq(names(nnData))
-      
+      names(nnDatatest) <- addq(names(nnDatatest))
       
       n <- names(nnData)
-    
+      nTest <- names(nnDatatest)
       #gets indexes of dummy id columns 
       indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
+      indexIdTest <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",nTest)
       
       lhseq <- paste(names(nnData[,indexId]),collapse="+")
       
@@ -114,24 +133,32 @@ tests <- function(train_s,test_s){
       
       
       #TRAIN neuralnet!
-      nn <- neuralnet(f,data=nnData,hidden=c(5,3),linear.output=FALSE) 
+      nn <- neuralnet(f,data=nnData,hidden=c(10,10),linear.output=FALSE) 
       
-      nnDataResponse <- nnData[,(length(nnData)-2):(length(nnData))]
-      nnDatatestResponse <- nnDatatest[,(length(nnDatatest)-2):(length(nnDatatest))]
-      
-      
-      trainRes <-  round(neuralnet::compute(nn,nnData[,1:(length(nnData)-3)])$net.result)
-      testRes <- round( neuralnet::compute(nn,nnDatatest[,1:(length(nnDatatest)-3)])$net.result)
-      
-    
+      nnDataResponse <- nnData[,indexId]
+      nnDatatestResponse <- nnDatatest[,indexIdTest]
       
       
+      trainRes <-apply(neuralnet::compute(nn,nnData[,-indexId])$net.result,1,function(x) which.max(x))
+      testRes <-apply(neuralnet::compute(nn,nnDatatest[,-indexIdTest])$net.result,1,function(x) which.max(x))
       
       
-      #trainError <- 100*(1-mean(train_s$idZ == predict(nn,train_s,type="class")))
-      #testError <- 100*(1-mean(test_s$idZ == predict(nn,test_s,type="class")))
+      #remount idZ for train and test datasets
+      idZtest <- factor(apply(nnDatatest[,indexIdTest], 1, function(x) which(x == 1)), labels = colnames(nnDatatest[,indexIdTest])) 
+      idZ <- factor(apply(nnData[,indexId], 1, function(x) which(x == 1)), labels = colnames(nnData[,indexId])) 
       
-      #nnError <- c(trainError,testError)
+      #create response factors from computed data
+      idZtestres <- factor(testRes, labels = colnames(nnDatatest[,indexIdTest])) 
+      idZres <- factor(trainRes, labels = colnames(nnData[,indexId])) 
+      
+      
+      resultsNN <- idZtestres
+      
+      
+      trainError <- 100*(1-mean(idZ == idZres))
+      testError <- 100*(1-mean(idZtest == idZtestres))
+      
+      nnError <- c(trainError,testError)
       #print(c(neuron,trainError,testError))
   
   
@@ -161,10 +188,10 @@ tests <- function(train_s,test_s){
   
   
   kernelType <- "linear" 
-  mylogit <-svm(xi,yi,kernel = kernelType)
-  resultsSVM <- predict(mylogit,dplyr::select(test_s,-idZ))
-  res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
-  SVMerror <- printSVMResults(train_s,test_s,mylogit,kernelType)[2:3]
+  mylogit1 <-svm(xi,yi,kernel = kernelType)
+  resultsSVM <- predict(mylogit1,dplyr::select(test_s,-idZ))
+  res <- rbind(res,printSVMResults(train_s,test_s,mylogit1,kernelType))
+  SVMerror <- printSVMResults(train_s,test_s,mylogit1,kernelType)[2:3]
   kernelType <- "polynomial" 
   mylogit <-svm(xi,yi,kernel = kernelType)
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit,kernelType))
@@ -216,7 +243,7 @@ tests <- function(train_s,test_s){
     count<- count +1
     
     #for each group matrix remove idZ as we dont need it anymore
-    group_idz <- select(group,-idZ)
+    group_idz <- dplyr::select(group,-idZ)
     
     temp <- matrix(nrow=nrow(testX))
     
@@ -280,12 +307,15 @@ tests <- function(train_s,test_s){
   print(resultsMAND)
   print("RESULTADOS SVM")
   print(resultsSVM)
+  print("RESULTADOS REDE NEURAL")
+  print(resultsNN)
   print("RESULTADOS ESPERADOS")
   print (test_s$idZ)
   
   
   
-  tabela <- cbind(as.numeric(as.character(resultsKNN)),as.numeric(resultsMAND),as.numeric(as.character(resultsSVM)))
+  
+  tabela <- cbind(as.numeric(as.character(resultsKNN)),as.numeric(as.character(resultsSVM)),as.numeric(as.character(resultsNN)))
  
   #vote among results for the most recurrent label 
   
@@ -294,10 +324,10 @@ tests <- function(train_s,test_s){
   
   voteError <- 100*(1-mean(test_s$idZ==resultsVote))
   
+  models<-c(knnTrain,nn,mylogit1)
   
-  return (c(KNNerror,SVMerror,manhattanError,voteError))
-  #return (c(resultsKNN,resultsMAND,resultsSVM))
-  
+  return (c(KNNerror,SVMerror,nnError,voteError))
+
 }
 
 
