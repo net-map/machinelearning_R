@@ -12,18 +12,36 @@ library(neuralnet)
 
 
 
+set.seed.alpha <- function(x) {
+  require("digest")
+  hexval <- paste0("0x",digest(x,"crc32"))
+  intval <- type.convert(hexval) %% .Machine$integer.max
+  set.seed(intval)
+}
+
+
+
+
+
 
 #UCI DATASET PREPARATION
+#setwd("~/Documents/machinelearning_R/datasets")
 dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
 #datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
-fdataset<-filter(dataset,SPACEID%in%c(102,103,104,105,106,107,108,109,110,111))
+fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
 names(fdataset)[525] <- "idZ"
-tidyData <- select(fdataset,WAP001:WAP520,idZ)
+tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
 tidyData$idZ <- as.factor(tidyData$idZ)
 #
 
 
 
+
+#GET DATA FROM OUR SERVER
+#
+#
+#
+#
 #Name of facility
 facility <- "lira house"
 #user id
@@ -37,14 +55,8 @@ suppressWarnings( tidyData1 <- prepareData(rawData1) )
 tidyData1$idZ <- as.factor(tidyData1$idZ)
 
 
-#rawData2 <- getMLdata("scopusadria",1)
-#tidyData3 <- prepareData(rawData2)
-#tidyData3$idZ <- c(9,9,9,9)
 
 
-
-#
-#
 #
 #    SEPARATE DATASET IN TRAIN AND TEST SETS
 #    THIS WILL BE DIFFERENT FOR EACH DATASET
@@ -53,7 +65,8 @@ tidyData1$idZ <- as.factor(tidyData1$idZ)
 #
 #####################################################################################################
 
-#the following code removes entries (columns of the same AP) with 90% of -120 measures, i.e. the signal was to weak to me measured reliably
+
+#the following code removes entries (columns of the same AP) with 90% of > 100 measures, i.e. the signal was to weak to me measured reliably
 
 bol <- tidyData == 100
 discard <- NULL
@@ -69,36 +82,14 @@ for (col in  1:ncol(bol)){
 tidyData <- tidyData[,-discard] 
 
 
-#tidyData <- abs(tidyData1)
-
-
-# setwd("~/Documents/netmap")
-# data <- read.csv("trainingData.csv",header = TRUE,sep = ",")
-# datap <- dplyr::select(data,WAP001:WAP518,SPACEID)
-
 # Scaling data
-
 
 preProc  <- caret::preProcess(tidyData)
 scaled <- predict(preProc, tidyData)
 
-#maxs <- apply(dplyr::select(tidyData,-idZ), 2, max) 
-#mins <- apply(dplyr::select(tidyData,-idZ), 2, min)
-#scaled <- as.data.frame(scale(dplyr::select(tidyData,-idZ), center = mins, scale = maxs - mins))
-#concatenate with response vector again 
-#scaled$idZ <- tidyData$idZ
 
 # Train-test random splitting for machine learning
 # 30% for tests and the rest for training
-
-set.seed.alpha <- function(x) {
-  require("digest")
-  hexval <- paste0("0x",digest(x,"crc32"))
-  intval <- type.convert(hexval) %% .Machine$integer.max
-  set.seed(intval)
-}
-
-
 
 
 set.seed.alpha("3")
@@ -112,11 +103,6 @@ test <- tidyData[-index,]
 train_s <- scaled[index,]
 test_s <- scaled[-index,]
 
-tests(train,test)
-
-modelVector <- train_s[1,]
-
-models <-tests(train_s,test_s)
 
 ##########################################################################################
 #
@@ -126,11 +112,6 @@ models <-tests(train_s,test_s)
 #  We take out any RSSIs not present in train dataset and complete the test dataset with RSSIs (i.e. columns) present only in train dataset
 #
 #
-
-
-
-
-
 attach(train_s)
 train_s[idZ==12,]$idZ <- 7
 train_s$idZ <- factor(train_s$idZ)
@@ -141,27 +122,13 @@ test_s[id12,]$idZ <- c(7)
 test_s$idZ <- factor(test_s$idZ)
 detach(test_s)
 
-#names <- intersect(colnames(train),colnames(test))
-
-#test_s2<-merge(train_s[1,],test_s,by=names,all.y=TRUE)
-
-
-#index1 <- grep(".x",names(test_s2))
-
-#index2 <- grep(".y",names(test_s2))
-
-#setdiff(names(train_s),names(test_s2))
-
-#test_s2 <- test_s2[,-index1]
-#colnames(test_s2)[index2] <- sub(".y","",colnames(test_s2)[index2])
-
-#test_s2 <- test_s2[,colSums(is.na(test_s2))<nrow(test_s2)]
 
 ######################################################################################
 #
 #
 #
 #
+#CROSS VALIDATION
 #
 #
 #
@@ -169,7 +136,6 @@ detach(test_s)
 #
 #
 #
-#tests galore!
 listValues <- NULL
 for (i in 7:nrow(train)){
     listValues<- rbind(listValues,invisible(tests(train[1:i,],test)))
@@ -180,7 +146,16 @@ for (i in 7:nrow(train)){
 erroFinal <- rbind(erroFinal,listValues[nrow(listValues),][c(3,5)])
 
 
-
+#
+#
+#
+#PLOT ERRORS
+#
+#
+#
+#
+#
+#
 
 
 x <- seq(1,nrow(listValues[5:nrow(listValues),]),1)

@@ -133,7 +133,9 @@ tests <- function(train_s,test_s){
       
       
       #TRAIN neuralnet!
-      nn <- neuralnet(f,data=nnData,hidden=c(10,10),linear.output=FALSE) 
+      nnErrorList <- NULL
+      for(neuron in 70:100){
+      nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-10,neuron-20),linear.output=FALSE) 
       
       nnDataResponse <- nnData[,indexId]
       nnDatatestResponse <- nnDatatest[,indexIdTest]
@@ -158,18 +160,13 @@ tests <- function(train_s,test_s){
       trainError <- 100*(1-mean(idZ == idZres))
       testError <- 100*(1-mean(idZtest == idZtestres))
       
-      nnError <- c(trainError,testError)
-      #print(c(neuron,trainError,testError))
-  
-  
+      nnError <- c(trainError,testError,neuron)
+      nnErrorList <- rbind(nnError,nnErrorList)
+      }
       
-      
-  #assign("nn",nn2,.GlobalEnv)
- 
-  # Visual plot of the model
-  #plot(nn)
-  
-  
+      plot(nnErrorList[,2],nnErrorList[,3])
+     
+      cor(nnErrorList[,2],nnErrorList[,3])
   
   
   #SUPPORT VECTOR MACHINE
