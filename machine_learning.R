@@ -130,12 +130,14 @@ tests <- function(train_s,test_s){
       
       #for some reason, remove quotes and it works
       nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
-      
+      nnDatatest <- cbind(dplyr::select(test_s,-idZ),nnet::class.ind(test_s$idZ))
       
       #TRAIN neuralnet!
       nnErrorList <- NULL
-      for(neuron in 70:100){
-      nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-10,neuron-20),linear.output=FALSE) 
+      
+      neuron <- 80
+      
+      nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-10,neuron-20,neuron-30),linear.output=FALSE) 
       
       nnDataResponse <- nnData[,indexId]
       nnDatatestResponse <- nnDatatest[,indexIdTest]
@@ -146,12 +148,12 @@ tests <- function(train_s,test_s){
       
       
       #remount idZ for train and test datasets
-      idZtest <- factor(apply(nnDatatest[,indexIdTest], 1, function(x) which(x == 1)), labels = colnames(nnDatatest[,indexIdTest])) 
+      idZtest <- factor(apply(nnDatatest[,indexIdTest], 1, function(x) which(x == 1)), labels= colnames(nnDatatest[,indexIdTest])) 
       idZ <- factor(apply(nnData[,indexId], 1, function(x) which(x == 1)), labels = colnames(nnData[,indexId])) 
       
       #create response factors from computed data
-      idZtestres <- factor(testRes, labels = colnames(nnDatatest[,indexIdTest])) 
-      idZres <- factor(trainRes, labels = colnames(nnData[,indexId])) 
+      idZtestres <- factor(testRes, labels  = colnames(nnDatatest[,indexIdTest])) 
+      idZres <- factor(trainRes, labels= colnames(nnData[,indexId])) 
       
       
       resultsNN <- idZtestres
@@ -160,13 +162,13 @@ tests <- function(train_s,test_s){
       trainError <- 100*(1-mean(idZ == idZres))
       testError <- 100*(1-mean(idZtest == idZtestres))
       
-      nnError <- c(trainError,testError,neuron)
-      nnErrorList <- rbind(nnError,nnErrorList)
-      }
+      nnError <- c(trainError,testError)
       
-      plot(nnErrorList[,2],nnErrorList[,3])
+      
+      
+      #plot(nnErrorList[,2],nnErrorList[,3])
      
-      cor(nnErrorList[,2],nnErrorList[,3])
+      #cor(nnErrorList[,2],nnErrorList[,3])
   
   
   #SUPPORT VECTOR MACHINE
