@@ -189,3 +189,11 @@ plotError(4, "SVM Error")
 plotError(2, "KNN Error")
 
 backupSK <- listValues
+
+
+for (i in 1:nrow(test_s))
+  print(singleTest(NNmodel,SVM,KNN,dplyr::select(test_s[i,],-idZ)))
+
+
+
+

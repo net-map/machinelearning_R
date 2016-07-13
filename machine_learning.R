@@ -74,25 +74,59 @@ MHmakeRandomString <- function(n, lenght)
 #
 #RSSID1 RSSID2 RSSID3 ...   idZ (id of Zone in which that measure was made)
 # -30     -39    -29         2
-
+#
+#
+#
 singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
   
   #get names of columns used to train classifiers
   names <- NNmodel$model.list$variables
-  
+  factors <- NNmodel$model.list$response
+  #remove quotes (if there are any)
+  names <- gsub("`",'',names)
+  factors <- gsub("`",'',factors)
   #creates dummy vector with BSSIDs used to train the classifier
   dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
   
-  testVector <- test_s[1,]
-  
   #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+ 
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,by=commomNames,all.y=TRUE)
   
-  merge(dummyVector,testVector,by.x=names)
-  
+  testVector[is.na(testVector)] <- -120
 
-  testRes <-apply(neuralnet::compute(nn,dplyr::select(testVector,-idZ))$net.result,1,function(x) which.max(x))
-
   
+  
+  #NEURALNET PREDICTION
+  nnPrediction <-apply(neuralnet::compute(nn,testVector)$net.result,1,function(x) which.max(x))
+  
+  #get idz computed
+  idZNN <- factors[nnPrediction]
+  
+  
+  #SVM PREDICTION
+  svmPrediction <- as.numeric(predict(SVMmodel,testVector))
+  
+  #get idz computed
+  idZSVM <- factors[svmPrediction]
+  
+  
+  #KNN PREDICTION
+  knnPrediction <- as.numeric(predict(KNNmodel,testVector))
+  
+  #get idz computed
+  idZKNN <- factors[knnPrediction]
+  
+  
+  results <- cbind(idZKNN,idZSVM,idZNN)
+  
+  
+  #get most recurring result
+  idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
+  
+  #finally return calculated idZ
+  return (idZVote)
   
 }
 
@@ -292,7 +326,7 @@ tests <- function(train_s,test_s){
   #K-nearest neighbours
   knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
   
-  assign("KNN",KNN,.GlobalEnv)
+  assign("KNN",knnTrain,.GlobalEnv)
   
   #plot(knnTrain)
   
