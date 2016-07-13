@@ -25,6 +25,11 @@ set.seed.alpha <- function(x) {
 
 
 #UCI DATASET PREPARATION
+#
+#
+#
+#
+#
 #setwd("~/Documents/machinelearning_R/datasets")
 dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
 #datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
@@ -32,7 +37,7 @@ fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
 names(fdataset)[525] <- "idZ"
 tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
 tidyData$idZ <- as.factor(tidyData$idZ)
-#
+
 
 
 
@@ -47,12 +52,12 @@ facility <- "lira house"
 #user id
 user <- 2
 
-#rawData1 <- getMLdata(facility,user)
+rawData1 <- getMLdata(facility,user)
 
-suppressWarnings( tidyData1 <- prepareData(rawData1) )
+suppressWarnings( tidyData <- prepareData(rawData1) )
 
 #zones id is a factor, not a number!
-tidyData1$idZ <- as.factor(tidyData1$idZ)
+tidyData$idZ <- as.factor(tidyData$idZ)
 
 
 
@@ -113,7 +118,8 @@ test_s <- scaled[-index,]
 #
 #
 attach(train_s)
-train_s[idZ==12,]$idZ <- 7
+id13<- which(train_s$idZ==12)
+train_s[id13,]$idZ <- 7
 train_s$idZ <- factor(train_s$idZ)
 detach(train_s)
 attach(test_s)
@@ -137,13 +143,11 @@ detach(test_s)
 #
 #
 listValues <- NULL
-for (i in 7:nrow(train)){
-    listValues<- rbind(listValues,invisible(tests(train[1:i,],test)))
+for (i in seq(6,nrow(train_s),2)){
+    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
 }
 
-
-
-erroFinal <- rbind(erroFinal,listValues[nrow(listValues),][c(3,5)])
+tests(train_s,test_s)
 
 
 #
@@ -155,26 +159,33 @@ erroFinal <- rbind(erroFinal,listValues[nrow(listValues),][c(3,5)])
 #
 #
 #
+
 #
+#PLOT ERROR CURVE OF N-th model of the set
+#
+#
+  plotError <- function(nModel,title){
+    
+  x <- seq(6,nrow(train_s),2)
+  xx <- 1:nrow(listValues)
+  #data to be plotted and fited
+  data <- listValues[,nModel]
+  
+  #model as n degree polynomial
+  model <- lm(data~poly(xx,3))
+  
+  #plot scatter and tendence line
+  plot(x=x,data,col="red",ylab = "Erro percentual",xlab="# de Pontos de Treino",pch="v",main=title)
+  lines(x,predict(model,data.frame(x=x)))
+  
+  }
+  
+  
 
+  
+plotError(7, "Vote Error")  
+plotError(6, "NeuralNet Error")
+plotError(4, "SVM Error")
+plotError(2, "KNN Error")
 
-x <- seq(1,nrow(listValues[5:nrow(listValues),]),1)
-y <- 1:30
-
-#data to be plotted and fited
-data <- as.integer(listValues[5:nrow(listValues),2])
-
-#model as n degree polynomial
-model <- lm(data~poly(x,3))
-
-
-
-plot(data,col="blue",ylab = "Erro percentual",xlab="# de Pontos de Treino")
-
-
-xx <- seq(0,13, length.out=250)
-lines(xx,predict(model,data.frame(x=xx)))
-points(data)
-
-
-View(listValues)
+backupSK <- listValues

@@ -74,9 +74,24 @@ MHmakeRandomString <- function(n, lenght)
 #
 #RSSID1 RSSID2 RSSID3 ...   idZ (id of Zone in which that measure was made)
 # -30     -39    -29         2
+
 singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
   
+  #get names of columns used to train classifiers
+  names <- NNmodel$model.list$variables
   
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  testVector <- test_s[1,]
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  
+  merge(dummyVector,testVector,by.x=names)
+  
+
+  testRes <-apply(neuralnet::compute(nn,dplyr::select(testVector,-idZ))$net.result,1,function(x) which.max(x))
+
   
   
 }
@@ -135,12 +150,10 @@ tests <- function(train_s,test_s){
       #TRAIN neuralnet!
       nnErrorList <- NULL
       
-      neuron <- 80
+      neuron <- 10
       
-      nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-10,neuron-20,neuron-30),linear.output=FALSE) 
-      
-      nnDataResponse <- nnData[,indexId]
-      nnDatatestResponse <- nnDatatest[,indexIdTest]
+      nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-1,neuron-2,neuron-3),linear.output=FALSE) 
+      assign("NeuralNet",nn,.GlobalEnv)
       
       
       trainRes <-apply(neuralnet::compute(nn,nnData[,-indexId])$net.result,1,function(x) which.max(x))
@@ -152,6 +165,10 @@ tests <- function(train_s,test_s){
       idZ <- factor(apply(nnData[,indexId], 1, function(x) which(x == 1)), labels = colnames(nnData[,indexId])) 
       
       #create response factors from computed data
+      
+      print( colnames(nnDatatest[,indexIdTest]))
+      print(testRes)
+      
       idZtestres <- factor(testRes, labels  = colnames(nnDatatest[,indexIdTest])) 
       idZres <- factor(trainRes, labels= colnames(nnData[,indexId])) 
       
@@ -188,6 +205,7 @@ tests <- function(train_s,test_s){
   
   kernelType <- "linear" 
   mylogit1 <-svm(xi,yi,kernel = kernelType)
+  assign("SVM",mylogit1,.GlobalEnv)
   resultsSVM <- predict(mylogit1,dplyr::select(test_s,-idZ))
   res <- rbind(res,printSVMResults(train_s,test_s,mylogit1,kernelType))
   SVMerror <- printSVMResults(train_s,test_s,mylogit1,kernelType)[2:3]
@@ -274,6 +292,7 @@ tests <- function(train_s,test_s){
   #K-nearest neighbours
   knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train_s)
   
+  assign("KNN",KNN,.GlobalEnv)
   
   #plot(knnTrain)
   
@@ -798,7 +817,10 @@ getMLdata <- function (facility,user_id){
       
       print(paste("     ","Foi pega a measure: ",listMeasures$id[1]))
       
+      #WITH KALMANN FILTER
       listAccessPoints <- data.frame(bssid=res[,1],rssi=res[,2])
+      #WITHOUT KALMANN FILTER
+      #listAccessPoints <- data.frame(bssid=listAP[,1],rssi=listAP[,2])
       
       #only bssi and rssi matter for the machine learning algorithm
       
