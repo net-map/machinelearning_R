@@ -383,7 +383,77 @@ tests <- function(train_s,test_s){
 }
 
 
+#
+#
+#TRAIN MODELS WITH TRAIN SET IN FORMAT SPECIFIED IN ANOTHER FUNCTIONS
+#
+#
+#
+trainModels <- function(train){
+  
+  
+  
+  #NEURALNETWORK
+  
+  #transforms factors in binary dummy vectors
+  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train$idZ))
 
+  addq <- function(x) paste0("`", x, "`")
+  #adds `x` to every name in data
+  names(nnData) <- addq(names(nnData))
+
+  n <- names(nnData)
+  #gets indexes of dummy id columns 
+  indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
+
+  lhseq <- paste(names(nnData[,indexId]),collapse="+")
+  
+  rhseq <- paste(names(nnData[,-indexId]),collapse="+")
+  
+  #creates formula
+  f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
+  
+  #for some reason, remove quotes and it works
+  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train_s$idZ))
+
+  #TRAIN neuralnet!
+
+  neuron <- 10
+  
+  nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-1,neuron-2,neuron-3),linear.output=FALSE) 
+  assign("NeuralNet",nn,.GlobalEnv)
+  
+  
+  #SUPPORT VECTOR MACHINE
+  
+  #We must separate data into X matrix for the features and Y for the response vector with the classes
+  #suppressWarnings(attach(train_s))
+  #detach(train_s)
+  xi<- subset(train,select= - idZ)
+  yi <- train$idZ
+  
+  
+  
+  kernelType <- "linear" 
+  mylogit1 <-svm(xi,yi,kernel = kernelType)
+  
+  assign("SVM",mylogit1,.GlobalEnv)
+ 
+  
+  
+  #
+  #
+  #K NEAREST NEIGHBOURS
+  #
+  #
+  
+  knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train)
+  
+  assign("KNN",knnTrain,.GlobalEnv)
+  
+
+
+}
 
 
 #apply the kalman filter on a vector of RSSI measures
