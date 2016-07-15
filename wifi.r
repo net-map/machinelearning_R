@@ -33,7 +33,11 @@ set.seed.alpha <- function(x) {
 #setwd("~/Documents/machinelearning_R/datasets")
 dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
 #datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
-fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
+#TESTE 2 zonas
+#fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
+#TESTE 4 ZONAS
+fdataset<-dplyr::filter(dataset,SPACEID%in%c(226,227,228,229))
+
 names(fdataset)[525] <- "idZ"
 tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
 tidyData$idZ <- as.factor(tidyData$idZ)
@@ -142,12 +146,25 @@ detach(test_s)
 #
 #
 #
+
+#NEURAL NET SINGLE LAYER CROSS VALIDATION
+
+NNerrorList <- NULL
+for( i in seq(100,200,5)){
+   NNerrorlist <- rbind(crossValidateNN(train_s,test_s,i),NNerrorlist)
+}
+
+
+
+
+
+
 listValues <- NULL
 for (i in seq(6,nrow(train_s),2)){
     listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
 }
 
-tests(train_s,test_s)
+lista <- tests(train_s,test_s)
 
 
 #
