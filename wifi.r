@@ -147,14 +147,21 @@ detach(test_s)
 #
 #
 
-#NEURAL NET SINGLE LAYER CROSS VALIDATION
 
+
+#K-FOLD CROSS-VALIDATION NEURALNET
 NNerrorList <- NULL
-for( i in seq(100,200,5)){
-   NNerrorlist <- rbind(crossValidateNN(train_s,test_s,i),NNerrorlist)
+kNumber <- 10
+flds <- createFolds(train_s$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+
+#flds[[1]] gets first fold indexes, etc
+
+for( i in 1:kNumber){
+  NNerrorList <- rbind(crossValidateNN(train_s[-flds[[i]],],train_s[flds[[i]],],i*10),NNerrorList)
 }
 
 
+plot(i,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# neuronios na HL",main="Cross-Validation 10-Fold para Rede Neural")
 
 
 

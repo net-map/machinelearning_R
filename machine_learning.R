@@ -383,13 +383,16 @@ tests <- function(train_s,test_s){
 }
 
 
-crossValidateNN <- function (train_s,test_s,neuron){
+crossValidateNN <- function (trainset,validateset,neuron){
   
+  
+  idZ <- trainset$idZ
+  idZtest <- validateset$idZ
   
   
   #transforms factors in binary dummy vectors
-  nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
-  nnDatatest <- cbind(dplyr::select(test_s,-idZ),nnet::class.ind(test_s$idZ))
+  nnData <- cbind(dplyr::select(trainset,-idZ),nnet::class.ind(trainset$idZ))
+  nnDatatest <- cbind(dplyr::select(validateset,-idZ),nnet::class.ind(validateset$idZ))
   
   addq <- function(x) paste0("`", x, "`")
   #adds `x` to every name in data
@@ -410,8 +413,8 @@ crossValidateNN <- function (train_s,test_s,neuron){
   f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
   
   #for some reason, remove quotes and it works
-  nnData <- cbind(dplyr::select(train_s,-idZ),nnet::class.ind(train_s$idZ))
-  nnDatatest <- cbind(dplyr::select(test_s,-idZ),nnet::class.ind(test_s$idZ))
+  nnData <- cbind(dplyr::select(trainset,-idZ),nnet::class.ind(trainset$idZ))
+  nnDatatest <- cbind(dplyr::select(validateset,-idZ),nnet::class.ind(validateset$idZ))
   
   #TRAIN neuralnet!
   nnErrorList <- NULL
@@ -426,8 +429,8 @@ crossValidateNN <- function (train_s,test_s,neuron){
   
   
   #remount idZ for train and test datasets
-  idZtest <- factor(apply(nnDatatest[,indexIdTest], 1, function(x) which(x == 1)), labels= colnames(nnDatatest[,indexIdTest])) 
-  idZ <- factor(apply(nnData[,indexId], 1, function(x) which(x == 1)), labels = colnames(nnData[,indexId])) 
+  #idZtest <- factor(apply(nnDatatest[,indexIdTest], 1, function(x) which(x == 1)), labels= colnames(nnDatatest[,indexIdTest])) 
+  #idZ <- factor(apply(nnData[,indexId], 1, function(x) which(x == 1)), labels = colnames(nnData[,indexId])) 
   
   #create response factors from computed data
  
@@ -435,6 +438,9 @@ crossValidateNN <- function (train_s,test_s,neuron){
   factors <- gsub("`",'',factors)
   
   
+  print (factors)
+  print (testRes)
+  print(trainRes)
   
   idZtestres <- factors[testRes]
   idZres <- factors[trainRes]
