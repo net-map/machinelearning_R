@@ -437,10 +437,7 @@ crossValidateNN <- function (trainset,validateset,neuron){
   factors <- nn$model.list$response
   factors <- gsub("`",'',factors)
   
-  
-  print (factors)
-  print (testRes)
-  print(trainRes)
+
   
   idZtestres <- factors[testRes]
   idZres <- factors[trainRes]
@@ -453,10 +450,12 @@ crossValidateNN <- function (trainset,validateset,neuron){
   trainError <- 100*(1-mean(idZ == idZres))
   testError <- 100*(1-mean(idZtest == idZtestres))
   
-  nnError <- c(trainError,testError)
+  print (c("O erro com ",neuron,"neuronios na HL teve resultado de ",testError))
+  
+  return (c(trainError,testError))
   
   
-  print (nnError)
+  
   
 }
 
