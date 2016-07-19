@@ -32,11 +32,19 @@ set.seed.alpha <- function(x) {
 #
 #setwd("~/Documents/machinelearning_R/datasets")
 dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
-#datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
+
+datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
+
+
 #TESTE 2 zonas
 #fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
 #TESTE 4 ZONAS
-fdataset<-dplyr::filter(dataset,SPACEID%in%c(226,227,228,229))
+#fdataset<-dplyr::filter(dataset,SPACEID%in%c(226,227,228,229),RELATIVEPOSITION ==1)
+#TESTE 6 ZONAS
+fdataset<-dplyr::filter(dataset,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
+fdatasetV<-dplyr::filter(datasetV,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
+
+
 
 names(fdataset)[525] <- "idZ"
 tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
@@ -152,26 +160,41 @@ detach(test_s)
 #K-FOLD CROSS-VALIDATION NEURALNET
 NNerrorList <- NULL
 kNumber <- 10
-flds <- createFolds(train_s$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
 
 #flds[[1]] gets first fold indexes, etc
 
+neuronList <- c(50,80,100,120,150,200,300,350,400,450)
+
 for( i in 1:kNumber){
-  NNerrorList <- rbind(crossValidateNN(train_s[-flds[[i]],],train_s[flds[[i]],],i*10),NNerrorList)
+  NNerrorList <- rbind(NNerrorList,crossValidateNN(scaled[-flds[[i]],],scaled[flds[[i]],],neuronList[i]))
 }
 
 
-plot(i,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# neuronios na HL",main="Cross-Validation 10-Fold para Rede Neural")
+plot(neuronList,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# neuronios na HL",main="Cross-Validation 10-Fold para Rede Neural")
 
 
 
 
-listValues <- NULL
-for (i in seq(6,nrow(train_s),2)){
-    listValues<- rbind(listValues,invisible(tests(train_s[1:i,],test_s)))
+#K-FOLD KNN CROSS VALIDATION 
+#KNN error list
+KNNerrorList<-NULL
+kNumber <- 20
+flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+
+vizinhosList <- c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
+
+
+for (i in 1:kNumber){
+  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],],vizinhosList[i]))
 }
 
-lista <- tests(train_s,test_s)
+
+
+plot(vizinhosList,KNNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 20-Fold para KNN")
+
+
+
 
 
 #

@@ -131,6 +131,50 @@ singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
 }
 
 
+
+crossValidateKNN <- function (trainingSet,validationSet,k){
+
+  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=1,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
+  
+
+  trainError <- 100*(1-mean(trainingSet$idZ == predict(knnTrain,trainingSet)))
+ 
+ 
+  testError <- 100*(1-mean(validationSet$idZ == predict(knnTrain,validationSet)))
+ 
+  return (c(trainError,testError))
+  
+  
+}
+
+
+
+
+crossValidateSVM <- function (trainingSet,validationSet,kernelType){
+  
+  #SUPPORT VECTOR MACHINE
+  
+  #We must separate data into X matrix for the features and Y for the response vector with the classes
+  #suppressWarnings(attach(train_s))
+  #detach(train_s)
+  xi<- subset(trainingSet,select= - idZ)
+  yi <- trainingSet$idZ
+  mylogit <-svm(xi,yi,kernel = kernelType)
+  
+  #print("Com SVM, com os dados de treino, temos erro de:")
+  trainError <- 100*(1-mean(trainingSet$idZ == predict(mylogit)))
+  
+  #print("Com SVM, com os dados de teste, temos erro de:")
+  testError <- 100*(1-mean(validationSet$idZ == predict(mylogit,dplyr::select(validationSet,-idZ))))
+  
+  
+  return(c(trainError,testError))
+}
+
+
+
+
+
 #performs a variety of ML tests on the WIFI dataset
 #
 #Dataset MUST be in the following form, as outputed by function prepareData:
