@@ -46,6 +46,10 @@ fdatasetV<-dplyr::filter(datasetV,SPACEID%in%c(101,102,103,104,105,106),RELATIVE
 
 
 
+
+
+
+
 names(fdataset)[525] <- "idZ"
 tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
 tidyData$idZ <- as.factor(tidyData$idZ)
@@ -86,6 +90,9 @@ tidyData$idZ <- as.factor(tidyData$idZ)
 #the following code removes entries (columns of the same AP) with 90% of > 100 measures, i.e. the signal was to weak to me measured reliably
 
 bol <- tidyData == 100
+
+tidyData[bol] = -120
+
 discard <- NULL
 for (col in  1:ncol(bol)){
  
@@ -156,6 +163,10 @@ detach(test_s)
 #
 
 
+#TESTE GERAL
+tests(train_s,test_s)
+
+
 
 #K-FOLD CROSS-VALIDATION NEURALNET
 NNerrorList <- NULL
@@ -179,10 +190,10 @@ plot(neuronList,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# ne
 #K-FOLD KNN CROSS VALIDATION 
 #KNN error list
 KNNerrorList<-NULL
-kNumber <- 20
+kNumber <- 10
 flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
 
-vizinhosList <- c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
+vizinhosList <- c(1,2,3,4,5,6,7,8,9,10)
 
 
 for (i in 1:kNumber){
@@ -191,7 +202,7 @@ for (i in 1:kNumber){
 
 
 
-plot(vizinhosList,KNNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 20-Fold para KNN")
+plot(vizinhosList,KNNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 10-Fold para KNN")
 
 
 

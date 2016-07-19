@@ -134,7 +134,7 @@ singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
 
 crossValidateKNN <- function (trainingSet,validationSet,k){
 
-  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=1,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
+  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=2,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
   
 
   trainError <- 100*(1-mean(trainingSet$idZ == predict(knnTrain,trainingSet)))
