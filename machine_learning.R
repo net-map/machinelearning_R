@@ -134,7 +134,7 @@ singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
 
 crossValidateKNN <- function (trainingSet,validationSet,k){
 
-  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=2,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
+  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=1,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
   
 
   trainError <- 100*(1-mean(trainingSet$idZ == predict(knnTrain,trainingSet)))
@@ -585,45 +585,53 @@ trainModels <- function(train){
 kalmanFilter <- function (X){
   
   #X <- c(-38,-45,-36,-46,-37,-45,-39,-38,-38,-38,-38,-39)
+  #out -> -39.70115747
+  
+  
   #if input is a dataframe or matrix, converts it to a one-dimensional vector
   X <-as.vector(X)
   
   #transforms into row vector if needed
-  if(dim(X)[1]==1){
-    X <- t(X)
-  }
+  #if(dim(X)[1]==1){
+   # X <- t(X)
+  #}
   
   #initial hunch for mean (first measure)
   muInit <- X[1]
   #initial variance
   pInit <- 50
-  
+  #initial Q
   Qt <- var(X)
-  
+  #initial noise
   Rt <- 0.008 
   
   
   
-  
+  #FIRST ITERATION
   newMu <- muInit
   newP <- pInit
   
   
-  
+  #FIRST OUTPUT
   outMu <- newMu
+  
+  
   for(Xi in X){
     
     #PREDICTION PHASE
     
+    #PREDICT NEW MU
     mu<- newMu
-    
+    #PREDICT NEW VARIANCE
     p <- newP + Rt
     
     #UPDATE PHASE
     Kgain <- p*(p+Qt)^-1
     
+    #UPDATE newMU (mean) 
     newMu <- mu + Kgain*(Xi-mu)
     
+    #UPDATE newP (variance)
     newP <- p - (Kgain*p)
     
     outMu <- cbind(outMu,newMu)
