@@ -37,18 +37,14 @@ datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
 
 
 #TESTE 2 zonas
-#fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
+fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
 #TESTE 4 ZONAS
-#fdataset<-dplyr::filter(dataset,SPACEID%in%c(226,227,228,229),RELATIVEPOSITION ==1)
+fdataset<-dplyr::filter(dataset,SPACEID%in%c(116,117,118,119,120,121,122,123,124),RELATIVEPOSITION ==1)
 #TESTE 6 ZONAS
 fdataset<-dplyr::filter(dataset,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
-fdatasetV<-dplyr::filter(datasetV,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
 
 
-
-
-
-
+#fdatasetV<-dplyr::filter(datasetV,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
 
 names(fdataset)[525] <- "idZ"
 tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
@@ -87,7 +83,7 @@ tidyData$idZ <- as.factor(tidyData$idZ)
 #####################################################################################################
 
 
-#the following code removes entries (columns of the same AP) with 90% of > 100 measures, i.e. the signal was to weak to me measured reliably
+#the following code removes entries (columns of the same AP) with 100% of > 100 measures, i.e. the signal was to weak to me measured reliably
 
 bol <- tidyData == 100
 
@@ -96,7 +92,7 @@ tidyData[bol] = -120
 discard <- NULL
 for (col in  1:ncol(bol)){
  
-  if( mean( bol[,col]) > .95){
+  if( mean( bol[,col]) == 1){
     discard <- cbind(discard,col)
   }
   
@@ -108,8 +104,19 @@ tidyData <- tidyData[,-discard]
 
 # Scaling data
 
+
+#PCA .95 threshold
+PCA  <- caret::preProcess(tidyData[,-idZ],method=c("center","scale","pca"))
+#project data into PCA space
+scaledPCA <- predict(PCA, tidyData[,-idZ])
+
+
+#NON PCA SCALING
 preProc  <- caret::preProcess(tidyData)
 scaled <- predict(preProc, tidyData)
+
+
+
 
 
 # Train-test random splitting for machine learning
@@ -117,7 +124,7 @@ scaled <- predict(preProc, tidyData)
 
 
 set.seed.alpha("3")
-set.seed(989899)
+set.seed(9898999)
 
 index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
 #Train and test UNESCALED
@@ -126,7 +133,9 @@ test <- tidyData[-index,]
 #Train and test SCALED
 train_s <- scaled[index,]
 test_s <- scaled[-index,]
-
+#Train and test in PCA space
+train_pca <- scaledPCA[index,]
+test_pca <- scaledPCA[-index,]
 
 ##########################################################################################
 #
@@ -166,20 +175,23 @@ detach(test_s)
 #TESTE GERAL
 tests(train_s,test_s)
 
-
+tests(train_pca,test_pca)
 
 #K-FOLD CROSS-VALIDATION NEURALNET
 NNerrorList <- NULL
 kNumber <- 10
-flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+flds <- createFolds(scaledPCA$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
 
 #flds[[1]] gets first fold indexes, etc
-
+#200 neuronios parace ser bom
 neuronList <- c(50,80,100,120,150,200,300,350,400,450)
 
 for( i in 1:kNumber){
-  NNerrorList <- rbind(NNerrorList,crossValidateNN(scaled[-flds[[i]],],scaled[flds[[i]],],neuronList[i]))
+  NNerrorList <- rbind(NNerrorList,crossValidateNN(scaledPCA[-flds[[i]],],scaledPCA[flds[[i]],],neuronList[i]))
 }
+
+
+
 
 
 plot(neuronList,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# neuronios na HL",main="Cross-Validation 10-Fold para Rede Neural")
