@@ -465,7 +465,7 @@ crossValidateNN <- function (trainset,validateset,neuron){
   
   
   
-  nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE)
+  nn <- neuralnet::neuralnet(f,data=nnData,hidden=neuron,linear.output=FALSE)
   
   
   trainRes <-apply(neuralnet::compute(nn,nnData[,-indexId])$net.result,1,function(x) which.max(x))
@@ -514,14 +514,15 @@ crossValidateNN <- function (trainset,validateset,neuron){
 #
 #
 #
-trainModels <- function(train){
+trainModels <- function(train,trainPCA){
   
   
   
   #NEURALNETWORK
   
   #transforms factors in binary dummy vectors
-  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train$idZ))
+  #ASSUMING IDZ IS IN COLUMN 1!!!!!!!!!
+  nnData <- cbind(dplyr::select(trainPCA,-idZ),nnet::class.ind(trainPCA[,1]))
 
   addq <- function(x) paste0("`", x, "`")
   #adds `x` to every name in data
@@ -539,15 +540,15 @@ trainModels <- function(train){
   f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
   
   #for some reason, remove quotes and it works
-  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train_s$idZ))
-
+  nnData <- cbind(dplyr::select(trainPCA,-idZ),nnet::class.ind(trainPCA[,1]))
+  
   #TRAIN neuralnet!
 
   neuron <- 10
   
   nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron,neuron-1,neuron-2,neuron-3),linear.output=FALSE) 
   assign("NeuralNet",nn,.GlobalEnv)
-  
+  saveRDS(nn,"NeuralNet.rds")
   
   #SUPPORT VECTOR MACHINE
   
@@ -563,7 +564,8 @@ trainModels <- function(train){
   mylogit1 <-svm(xi,yi,kernel = kernelType)
   
   assign("SVM",mylogit1,.GlobalEnv)
- 
+  saveRDS(mylogit1,"SVM.rds")
+  
   
   
   #
@@ -575,6 +577,7 @@ trainModels <- function(train){
   knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train)
   
   assign("KNN",knnTrain,.GlobalEnv)
+  saveRDS(knnTrain,"KNN.rds")
   
 
 
