@@ -11,11 +11,12 @@ library(nnet)
 library(neuralnet)
 
 
+#prepare UCI dataset, first by findind it in "path"
 
-prepareUCIdata <- function (){
+prepareUCIdata <- function (path){
   
-  
-  #setwd("~/Documents/machinelearning_R/datasets")
+  #set directory
+  setwd(path)
   
   dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
   
@@ -99,6 +100,10 @@ prepareUCIdata <- function (){
   #Train and test UNESCALED
   train <- tidyData[index,]
   test <- tidyData[-index,]
+  assign("train",train,.GlobalEnv)
+  assign("test",test,.GlobalEnv)
+  
+  
   
   #Train and test SCALED
   train_s <- scaled[index,]
@@ -209,8 +214,9 @@ trainModels <- function(train,trainPCA){
 #
 #
 #
-singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
+singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel){
   
+
   #get names of columns used to train classifiers
   names <- colnames(SVMmodel$SV)
   
@@ -285,9 +291,9 @@ singleTest <- function (NNmodel,SVMmodel,KNNmodel,testVector){
 
 
 
-crossValidateKNN <- function (trainingSet,validationSet,k){
+crossValidateKNN <- function (trainingSet,validationSet,k,distance){
   
-  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=1,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=trainingSet)
+  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=distance, data=trainingSet)
   
   
   trainError <- 100*(1-mean(trainingSet$idZ == predict(knnTrain,trainingSet)))
