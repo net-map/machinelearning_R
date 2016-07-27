@@ -1,5 +1,5 @@
 
-
+#feed the location of the dataset to the function
 prepareUCIdata("~/Documents/machinelearning_R/datasets")
 
 
@@ -14,7 +14,7 @@ for (i in 1:nrow(test_s)){
 }
 
 
-#sapply(as.matrix(test_s),singleTest,NNmodel=NeuralNet,SVMmodel=SVM,KNNmodel=KNN)
+#apply(dplyr::select(test_s,-idZ),1,singleTest,NNmodel=NeuralNet,SVMmodel=SVM,KNNmodel=KNN)
 
 
 
@@ -72,6 +72,91 @@ for (i in 1:kNumber){
 
 
 plot(vizinhosList,KNNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 10-Fold para KNN\n Distancia Euclidiana")
+
+
+
+
+
+
+#SVM CROSS-VALIDATION 
+SVMerrorList <- NULL
+kNumber <- 4
+
+flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+
+
+kernelList <- c("linear","polynomial","radial","sigmoid")
+
+errorMean <- NULL
+
+
+for (i in 1:100){
+  flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+  SVMerrorList <- NULL
+  for( i in 1:kNumber){
+    SVMerrorList <- rbind(SVMerrorList,crossValidateSVM(scaled[-flds[[i]],],scaled[flds[[i]],],kernelList[i]))
+  }
+  
+  errorMean <- cbind(errorMean,SVMerrorList[,2])
+}
+
+print(SVMerrorList)
+
+
+
+
+meanList <- apply(errorMean,1,mean)
+varList <- apply(errorMean,1,var)
+grid.table(rbind(kernelList,meanE,meanvar),rows <- c("Kernel","Média do Erro","Variância do Erro"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+#test with incremental number of Zones
+
+
+
+zones <- c(116,117,118,119,120,121,122,123,124)
+
+
+
+
+for ( zNumber in 2:9) {
+  
+  
+  
+  datasets <-prepareUCIdata("~/Documents/machinelearning_R/datasets",sample(zones, zNumber, replace = FALSE, prob = NULL))
+  
+  trainedModels <- trainModels(datasets$train_s,datasets$train_pca)
+  
+  
+  
+  testVector <- NULL
+  results <- NULL
+  for (i in 1:nrow(datasets$test_s)){
+    results <- rbind (results,singleTest(dplyr::select(datasets$test_s[i,],-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN) == datasets$test_s[i,]$idZ)
+  }
+  
+  
+  print ( c("teste para ",zNumber, " zonas :" ,mean(results)  ))
+  
+  
+  
+}
+
+
+
+
+
 
 
 

@@ -9,11 +9,11 @@ library(cluster)
 library(caret)
 library(nnet)
 library(neuralnet)
-
+library(gridExtra)
 
 #prepare UCI dataset, first by findind it in "path"
-
-prepareUCIdata <- function (path){
+#take from data entries with ids in list listZones
+prepareUCIdata <- function (path,listZones){
   
   #set directory
   setwd(path)
@@ -24,11 +24,14 @@ prepareUCIdata <- function (path){
   
   
   #TESTE 2 zonas
-  fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
+  #fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
   #TESTE 4 ZONAS
   #fdataset<-dplyr::filter(dataset,SPACEID%in%c(116,117,118,119,120,121,122,123,124),RELATIVEPOSITION ==1)
   #TESTE 6 ZONAS
   #fdataset<-dplyr::filter(dataset,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
+  
+  #testeGenerico
+  fdataset<-dplyr::filter(dataset,SPACEID%in%listZones)
   
   
    
@@ -122,6 +125,10 @@ prepareUCIdata <- function (path){
   
   
   
+  dataList <- list("train" = train, "train_s" = train_s,"train_pca" = train_pca,"test" =test, "test_s" = test_s,"test_pca" = test_pca)
+  
+  return(dataList)
+  
 }
 
 
@@ -162,7 +169,7 @@ trainModels <- function(train,trainPCA){
   
   #TRAIN neuralnet!
   
-  neuron <- 100
+  neuron <- 210
   
   nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
   assign("NeuralNet",nn,.GlobalEnv)
@@ -178,7 +185,7 @@ trainModels <- function(train,trainPCA){
   
   
   
-  kernelType <- "linear" 
+  kernelType <- "radial" 
   mylogit1 <-svm(xi,yi,kernel = kernelType)
   
   assign("SVM",mylogit1,.GlobalEnv)
@@ -192,10 +199,18 @@ trainModels <- function(train,trainPCA){
   #
   #
   
-  knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"), data=train)
+  knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
   
   assign("KNN",knnTrain,.GlobalEnv)
   saveRDS(knnTrain,"KNN.rds")
+  
+  
+  
+  modelList <- list("NeuralNet" = nn,"KNN"= knnTrain,"SVM" = mylogit1)
+  
+  return (modelList)
+  
+  
   
   
   
@@ -216,7 +231,8 @@ trainModels <- function(train,trainPCA){
 #
 singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel){
   
-
+ 
+  
   #get names of columns used to train classifiers
   names <- colnames(SVMmodel$SV)
   
