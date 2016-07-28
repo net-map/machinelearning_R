@@ -10,7 +10,7 @@ library(caret)
 library(nnet)
 library(neuralnet)
 library(gridExtra)
-
+library(rpart)
 #prepare UCI dataset, first by findind it in "path"
 #take from data entries with ids in list listZones
 prepareUCIdata <- function (path,listZones){
@@ -31,7 +31,7 @@ prepareUCIdata <- function (path,listZones){
   #fdataset<-dplyr::filter(dataset,SPACEID%in%c(101,102,103,104,105,106),RELATIVEPOSITION ==1)
   
   #testeGenerico
-  fdataset<-dplyr::filter(dataset,SPACEID%in%listZones)
+  fdataset<-dplyr::filter(dataset,SPACEID%in%listZones,RELATIVEPOSITION ==1)
   
   
    
@@ -141,6 +141,17 @@ prepareUCIdata <- function (path,listZones){
 #
 trainModels <- function(train,trainPCA){
   
+  #DECISION TREE
+
+  
+  tree <- rpart(idZ~.,data=train,method="class")
+  
+  #prune to avoid overfitting
+  tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+  
+  assign("Tree",tree,.GlobalEnv)
+  
+  
   
   
   #NEURALNETWORK
@@ -206,7 +217,7 @@ trainModels <- function(train,trainPCA){
   
   
   
-  modelList <- list("NeuralNet" = nn,"KNN"= knnTrain,"SVM" = mylogit1)
+  modelList <- list("NeuralNet" = nn,"KNN"= knnTrain,"SVM" = mylogit1,"Tree" = tree)
   
   return (modelList)
   
@@ -229,7 +240,7 @@ trainModels <- function(train,trainPCA){
 #
 #
 #
-singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel){
+singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
  
   
@@ -280,8 +291,18 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel){
   #get idz computed
   idZKNN <- factors[knnPrediction]
   
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(Treemodel,testVector)
   
-  results <- cbind(idZKNN,idZSVM,idZNN)
+  idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
+  
+  
+  
+  
+  
+  
+  
+  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
   
   
   #get most recurring result
@@ -419,6 +440,39 @@ crossValidateNN <- function (trainset,validateset,neuron){
   print (c("O erro com ",neuron,"neuronios na HL teve resultado de ",testError))
   
   return (c(trainError,testError))
+  
+  
+  
+  
+}
+
+
+
+
+
+
+
+crossValidateTree <- function (trainset,testset){
+  
+  #Decision Tree
+  
+  idz <- levels(trainset$idZ)
+  
+  tree <- rpart(idZ~.,data=trainset,method="class")
+  
+  #prune to avoid overfitting
+  tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+
+  
+  predictionTree <- predict(tree,dplyr::select(testset,-idZ))
+  
+  factorNumber <- apply (predictionTree,1,function(x) which.max(x))
+  
+  errorTree <- idz[factorNumber] == testset$idZ
+  
+  
+  return(1-mean(errorTree))
+  
   
   
   

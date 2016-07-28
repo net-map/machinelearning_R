@@ -1,6 +1,6 @@
 
 #feed the location of the dataset to the function
-prepareUCIdata("~/Documents/machinelearning_R/datasets")
+prepareUCIdata("~/Documents/netmap/datasets",c(110,111,112,113,114,115))
 
 
 
@@ -10,7 +10,7 @@ trainModels(train_s,train_pca)
 testVector <- NULL
 
 for (i in 1:nrow(test_s)){
- print(singleTest(dplyr::select(test_s[i,],-idZ),NeuralNet,SVM,KNN) == test_s[i,]$idZ)
+ print(singleTest(dplyr::select(test_s[i,],-idZ),NeuralNet,SVM,KNN,Tree) == test_s[i,]$idZ)
 }
 
 
@@ -125,16 +125,16 @@ grid.table(rbind(kernelList,meanE,meanvar),rows <- c("Kernel","Média do Erro","
 
 
 
-zones <- c(116,117,118,119,120,121,122,123,124)
+zones <- c(116,117,118,119,120,121,122,123,124,125,126,127,128,129)
 
 
 
 
-for ( zNumber in 2:9) {
+for ( zNumber in 3:14) {
   
   
   
-  datasets <-prepareUCIdata("~/Documents/machinelearning_R/datasets",sample(zones, zNumber, replace = FALSE, prob = NULL))
+  datasets <-prepareUCIdata("~/Documents/netmap/datasets",sample(zones, zNumber, replace = FALSE, prob = NULL))
   
   trainedModels <- trainModels(datasets$train_s,datasets$train_pca)
   
@@ -143,7 +143,7 @@ for ( zNumber in 2:9) {
   testVector <- NULL
   results <- NULL
   for (i in 1:nrow(datasets$test_s)){
-    results <- rbind (results,singleTest(dplyr::select(datasets$test_s[i,],-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN) == datasets$test_s[i,]$idZ)
+    results <- rbind (results,singleTest(dplyr::select(datasets$test_s[i,],-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) == datasets$test_s[i,]$idZ)
   }
   
   
@@ -153,6 +153,20 @@ for ( zNumber in 2:9) {
   
 }
 
+
+
+
+
+# CROSS VALIDATE DECISION TREE
+
+
+
+
+datasets <-prepareUCIdata("~/Documents/netmap/datasets",c(110,111))
+
+
+
+crossValidateTree(datasets$train_s,datasets$test_s)
 
 
 
