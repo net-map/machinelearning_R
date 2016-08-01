@@ -197,7 +197,7 @@ trainModels <- function(train,trainPCA){
   
   
   kernelType <- "radial" 
-  mylogit1 <-svm(xi,yi,kernel = kernelType)
+  mylogit1 <-svm(xi,yi,kernel = kernelType,scale=FALSE)
   
   assign("SVM",mylogit1,.GlobalEnv)
   saveRDS(mylogit1,"SVM.rds")
@@ -210,7 +210,7 @@ trainModels <- function(train,trainPCA){
   #
   #
   
-  knnTrain<-train.kknn(idZ ~. , kmax=3,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
+  knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
   
   assign("KNN",knnTrain,.GlobalEnv)
   saveRDS(knnTrain,"KNN.rds")
