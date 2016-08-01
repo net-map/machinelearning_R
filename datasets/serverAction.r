@@ -1,18 +1,19 @@
 
 #feed the location of the dataset to the function
-prepareUCIdata("~/Documents/netmap/datasets",c(110,111,112,113,114,115))
+prepareUCIdata("~/Documents/netmap/datasets",zones)
 
 
 
 trainModels(train_s,train_pca)
 
 
-testVector <- NULL
-
+temp<-NULL
 for (i in 1:nrow(test_s)){
- print(singleTest(dplyr::select(test_s[i,],-idZ),NeuralNet,SVM,KNN,Tree) == test_s[i,]$idZ)
+ temp<-rbind(temp,singleTest(dplyr::select(test_s[i,],-idZ),NeuralNet,SVM,KNN,Tree) == test_s[i,]$idZ)
 }
 
+
+print (mean(temp))
 
 #apply(dplyr::select(test_s,-idZ),1,singleTest,NNmodel=NeuralNet,SVMmodel=SVM,KNNmodel=KNN)
 
@@ -129,6 +130,7 @@ zones <- c(116,117,118,119,120,121,122,123,124,125,126,127,128,129)
 
 
 
+bigTest <- NULL
 
 for ( zNumber in 3:14) {
   
@@ -148,7 +150,7 @@ for ( zNumber in 3:14) {
   
   
   print ( c("teste para ",zNumber, " zonas :" ,mean(results)  ))
-  
+  bigTest <- rbind(bigTest,c(zNumber,1-mean(results)))
   
   
 }
