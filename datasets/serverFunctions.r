@@ -94,12 +94,12 @@ prepareUCIdata <- function (path,listZones){
   
   
   
-  set.seed(9898999)
+  #set.seed(31415)
   
   
   #TRAIN AND TEST SET SPLIT
   
-  index <- sample(1:nrow(tidyData),round(0.7*nrow(tidyData)))
+  index <- sample(1:nrow(tidyData),round(0.8*nrow(tidyData)))
   #Train and test UNESCALED
   train <- tidyData[index,]
   test <- tidyData[-index,]
