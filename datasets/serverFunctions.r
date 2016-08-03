@@ -321,10 +321,134 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
+singleTestNN <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+  
+  #get names of columns used to train classifiers
+  names <- colnames(SVMmodel$SV)
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+  
+  #NEURALNET PREDICTION
+  nnPrediction <-apply(neuralnet::compute(NNmodel,testVector)$net.result,1,function(x) which.max(x))
+  
+  #get idz computed
+  idZNN <- factors[nnPrediction]
+  
+  return (as.numeric(as.character(idZNN)))
+  
+}
+
+
+singleTestSVM <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+  
+  #get names of columns used to train classifiers
+  names <- colnames(SVMmodel$SV)
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+ 
+  
+  #SVM PREDICTION
+  svmPrediction <- as.numeric(predict(SVMmodel,testVector))
+  
+  #get idz computed
+  idZSVM <- factors[svmPrediction]
+  
+  return(as.numeric(as.character(idZSVM)))
+   
+}
 
 
 
+singleTestTree <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+  
+  #get names of columns used to train classifiers
+  names <- colnames(SVMmodel$SV)
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+  
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(Treemodel,testVector)
+  
+  idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
+  
+  return(as.numeric(as.character(idZtree)))
+}
 
+
+
+singleTestKNN <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+  
+  #get names of columns used to train classifiers
+  names <- colnames(SVMmodel$SV)
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+  
+  
+  #KNN PREDICTION
+  knnPrediction <- as.numeric(predict(KNNmodel,testVector))
+  
+  #get idz computed
+  idZKNN <- factors[knnPrediction]
+  
+  return(as.numeric(as.character(idZKNN)))
+  
+}
 
 
 
