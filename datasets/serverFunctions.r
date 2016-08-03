@@ -11,6 +11,8 @@ library(nnet)
 library(neuralnet)
 library(gridExtra)
 library(rpart)
+
+
 #prepare UCI dataset, first by findind it in "path"
 #take from data entries with ids in list listZones
 prepareUCIdata <- function (path,listZones){
@@ -313,37 +315,78 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
 }
 
-
-
-
-
-
-
-
-
-singleTestNN <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
-  
-  #get names of columns used to train classifiers
-  names <- colnames(SVMmodel$SV)
+#
+#
+#
+#performs a voting test on a MATRIX without the ZoneID
+singleTestMatrix <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   
+  
+ 
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
   
   
   
-  #creates dummy vector with BSSIDs used to train the classifier
-  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
-  
-  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
-  commomNames <- intersect(names,names(testVector))
-  #get values that are present in testVector
-  testVector <- merge(dummyVector,testVector,all.y=TRUE)
-  
-  testVector[is.na(testVector)] <- -120
   
   #NEURALNET PREDICTION
-  nnPrediction <-apply(neuralnet::compute(NNmodel,testVector)$net.result,1,function(x) which.max(x))
+  nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))
+  
+  #get idz computed
+  idZNN <- as.numeric(as.character(factors[nnPrediction]))
+  
+  
+  #SVM PREDICTION
+  svmPrediction <- as.numeric(predict(SVMmodel,test))
+  
+  #get idz computed
+  idZSVM <- as.numeric(as.character(factors[svmPrediction]))
+  
+  
+  #KNN PREDICTION
+  knnPrediction <- as.numeric(predict(KNNmodel,test))
+  
+  #get idz computed
+  idZKNN <- as.numeric(as.character(factors[knnPrediction]))
+  
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(Treemodel,test)
+  
+  idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
+  
+  
+  
+  
+  
+  
+  
+  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
+  
+  assign("results",results,.GlobalEnv)
+  #get most recurring result
+  idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
+  #idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
+  
+  #finally return calculated idZ
+  return (idZVote)
+  
+}
+
+
+
+
+
+
+
+singleTestNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+
+  
+  #NEURALNET PREDICTION
+  nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))
   
   #get idz computed
   idZNN <- factors[nnPrediction]
@@ -353,10 +396,9 @@ singleTestNN <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
 }
 
 
-singleTestSVM <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestSVM <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
-  #get names of columns used to train classifiers
-  names <- colnames(SVMmodel$SV)
+  
   
   
   factors<- NNmodel$model.list$response
@@ -364,19 +406,8 @@ singleTestSVM <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   
   
-  #creates dummy vector with BSSIDs used to train the classifier
-  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
-  
-  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
-  commomNames <- intersect(names,names(testVector))
-  #get values that are present in testVector
-  testVector <- merge(dummyVector,testVector,all.y=TRUE)
-  
-  testVector[is.na(testVector)] <- -120
- 
-  
   #SVM PREDICTION
-  svmPrediction <- as.numeric(predict(SVMmodel,testVector))
+  svmPrediction <- as.numeric(predict(SVMmodel,test))
   
   #get idz computed
   idZSVM <- factors[svmPrediction]
@@ -387,29 +418,17 @@ singleTestSVM <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-singleTestTree <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
-  
-  #get names of columns used to train classifiers
-  names <- colnames(SVMmodel$SV)
+singleTestTree <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+
   
   
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
   
   
-  
-  #creates dummy vector with BSSIDs used to train the classifier
-  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
-  
-  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
-  commomNames <- intersect(names,names(testVector))
-  #get values that are present in testVector
-  testVector <- merge(dummyVector,testVector,all.y=TRUE)
-  
-  testVector[is.na(testVector)] <- -120
-  
+ 
   #DECISION TREE PREDICTION
-  predictionTree <- predict(Treemodel,testVector)
+  predictionTree <- predict(Treemodel,test)
   
   idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
   
@@ -418,30 +437,19 @@ singleTestTree <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-singleTestKNN <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestKNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
-  #get names of columns used to train classifiers
-  names <- colnames(SVMmodel$SV)
-  
+
   
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
   
   
-  
-  #creates dummy vector with BSSIDs used to train the classifier
-  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
-  
-  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
-  commomNames <- intersect(names,names(testVector))
-  #get values that are present in testVector
-  testVector <- merge(dummyVector,testVector,all.y=TRUE)
-  
-  testVector[is.na(testVector)] <- -120
+
   
   
   #KNN PREDICTION
-  knnPrediction <- as.numeric(predict(KNNmodel,testVector))
+  knnPrediction <- as.numeric(predict(KNNmodel,test))
   
   #get idz computed
   idZKNN <- factors[knnPrediction]

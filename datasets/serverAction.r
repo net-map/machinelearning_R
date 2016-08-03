@@ -1,10 +1,16 @@
 
+
+path <- "~/Documents/machinelearning_R/datasets"
+path <- "~/Documents/netmap/datasets"
+
+
+
 #feed the location of the dataset to the function
-prepareUCIdata("~/Documents/netmap/datasets",zones)
+datasets <- prepareUCIdata(path,zones)
 
 
 
-trainModels(train_s,train_pca)
+trainedModels<-trainModels(train_s,train_pca)
 
 
 temp<-NULL
