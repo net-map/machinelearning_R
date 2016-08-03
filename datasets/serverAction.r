@@ -10,7 +10,7 @@ datasets <- prepareUCIdata(path,zones)
 
 
 
-trainedModels<-trainModels(train_s,train_pca)
+trainedModels<-trainModels(train_s,train_pca,test_s)
 
 
 temp<-NULL
@@ -69,12 +69,12 @@ KNNerrorList<-NULL
 kNumber <- 10
 flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
 
-vizinhosList <- c(1,2,3,4,5,6,7,8,9,10)
+
 kernelList <- c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal")
 # 2~4 vizinhos parece ser top
 #distancia manhattan eh certamente a melhor
 for (i in 1:kNumber){
-  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],],vizinhosList[i],distance=1))
+  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],]))
 }
 
 
@@ -182,6 +182,12 @@ crossValidateTree(datasets$train_s,datasets$test_s)
 
 
 
+test <- dplyr::select(test_s,-idZ)
+
+
+vote <- MatrixTestBayesianVote(test,trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,train_s)
+
+error <- mean(vote == dplyr::select(test_s,idZ))
 
 
 

@@ -141,7 +141,7 @@ prepareUCIdata <- function (path,listZones){
 #
 #
 #
-trainModels <- function(train,trainPCA){
+trainModels <- function(train,trainPCA,test){
   
   #DECISION TREE
 
@@ -213,6 +213,7 @@ trainModels <- function(train,trainPCA){
   #
   
   knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
+  #knnTrain<-kknn(formula = idZ ~. , k=3,scale=FALSE,kernel = "optimal",distance=1, train=train,test=test)
   
   assign("KNN",knnTrain,.GlobalEnv)
   saveRDS(knnTrain,"KNN.rds")
@@ -230,11 +231,98 @@ trainModels <- function(train,trainPCA){
 }
 
 
+#Use trained models to provide a single classification answer from testVector
+#REMOVE ZONE ID FROM VECTOR
+#
+#WEIGHTED BAYESIAN VOTE
+#
+#
+#RSSID1 RSSID2 RSSID3 ... 
+# -30     -39    -29         
+#
+#
+#
+singleTestBayesianVote <- function (testVector,NNmodel,SVMmodel,TreeModel,train){
+  
+  #TO DO
+  
+}
+
+#Use trained models to provide a list of classification answers from test matrix
+#REMOVE ZONE ID FROM VECTOR
+#
+#WEIGHTED BAYESIAN VOTE
+#
+#
+#RSSID1 RSSID2 RSSID3 ... 
+# -30     -39    -29         
+#
+#
+#
+MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
+  
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  
+  #NEURALNET PREDICTION
+  
+  nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))
+  
+  nnProb<-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) max(x))
+  
+  
+  #get idz computed
+  idZNN <- as.numeric(as.character(factors[nnPrediction]))
+  
+  
+  #SVM PREDICTION
+  svmPrediction <- as.numeric(predict(SVMmodel,test))
+  
+  #get idz computed
+  idZSVM <- as.numeric(as.character(factors[svmPrediction]))
+  
+  
+  #KNN PREDICTION
+  knnTrain<-kknn(formula=idZ ~. , k=3,distance=1, train=train,test=test,kernel="optimal")
+  
+  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+  knnPrediction <- factors[knnPrediction]
+  idZKNN <- knnPrediction
+  
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(TreeModel,test)
+  
+  idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
+  treeProb <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) max(x))]))
+  
+  
+  
+  
+  
+  
+  
+  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
+  
+  assign("results",results,.GlobalEnv)
+  #get most recurring result
+  idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
+  #idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
+  
+  #finally return calculated idZ
+  return (idZVote)
+  
+}
+
 
 #Use trained models to provide a single classification answer from testVector
 #REMOVE ZONE ID FROM VECTOR
 #
-#
+#SIMPLE VOTE
 #
 #
 #RSSID1 RSSID2 RSSID3 ... 
@@ -275,7 +363,6 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   #NEURALNET PREDICTION
   nnPrediction <-apply(neuralnet::compute(NNmodel,testVector)$net.result,1,function(x) which.max(x))
-  
   #get idz computed
   idZNN <- factors[nnPrediction]
   
@@ -332,6 +419,8 @@ singleTestMatrix <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   #NEURALNET PREDICTION
   nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))
+  nnProb<-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) max(x))
+  
   
   #get idz computed
   idZNN <- as.numeric(as.character(factors[nnPrediction]))
@@ -460,17 +549,21 @@ singleTestKNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-crossValidateKNN <- function (trainingSet,validationSet,k,distance){
+crossValidateKNN <- function (trainingSet,validationSet){
   
-  knnTrain<-train.kknn(idZ ~. , kmax=k,distance=distance, data=trainingSet)
-  
-  
-  trainError <- 100*(1-mean(trainingSet$idZ == predict(knnTrain,trainingSet)))
+  knnTrain<-kknn(formula=idZ ~. , k=3,distance=1, train=trainingSet,test=validationSet,kernel="optimal")
   
   
-  testError <- 100*(1-mean(validationSet$idZ == predict(knnTrain,validationSet)))
   
-  return (c(trainError,testError))
+  #trainRes <-apply(neuralnet::compute(nn,nnData[,-indexId])$net.result,1,function(x) which.max(x))
+  
+  
+  testError <- 100*(1-mean(validationSet$idZ == knnTrain$fitted.values))
+  
+  
+  knnTrain
+  
+  return (testError)
   
   
 }
