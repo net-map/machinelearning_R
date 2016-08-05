@@ -199,7 +199,7 @@ trainModels <- function(train,trainPCA,test){
   
   
   kernelType <- "radial" 
-  mylogit1 <-svm(xi,yi,kernel = kernelType,scale=FALSE)
+  mylogit1 <-svm(xi,yi,kernel = kernelType,scale=FALSE,probability = TRUE)
   
   assign("SVM",mylogit1,.GlobalEnv)
   saveRDS(mylogit1,"SVM.rds")
@@ -271,9 +271,10 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   
   #NEURALNET PREDICTION
   
-  nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))
+
+  nnProb<-neuralnet::compute(NNmodel,test)$net.result
   
-  nnProb<-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) max(x))
+  nnPrediction <-apply(nnProb,1,function(x) which.max(x))
   
   
   #get idz computed
@@ -283,13 +284,18 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   #SVM PREDICTION
   svmPrediction <- as.numeric(predict(SVMmodel,test))
   
+  svmProb <- predict(SVMmodel,test,probability=TRUE)
+  svmProb <- attr(svmProb,"probabilities")  
+
+  
+
   #get idz computed
   idZSVM <- as.numeric(as.character(factors[svmPrediction]))
   
   
   #KNN PREDICTION
   knnTrain<-kknn(formula=idZ ~. , k=3,distance=1, train=train,test=test,kernel="optimal")
-  
+  knnProb <- knnTrain$prob
   knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
   knnPrediction <- factors[knnPrediction]
   idZKNN <- knnPrediction
@@ -298,24 +304,19 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   predictionTree <- predict(TreeModel,test)
   
   idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
-  treeProb <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) max(x))]))
+  treeProb <-  predictionTree
+
   
+  sumProb <-  knnProb + nnProb +svmProb +treeProb
+  #get class with maximum summed probability
+  idZWeightedProb <-  as.numeric(as.character(factors[apply (sumProb,1,function(x) which.max(x))]))
   
-  
-  
-  
-  
-  
-  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
-  
-  assign("results",results,.GlobalEnv)
-  #get most recurring result
-  idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
-  #idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
-  
+ 
+  assign("probs",sumProb,.GlobalEnv)
+
   #finally return calculated idZ
-  return (idZVote)
-  
+  return (idZWeightedProb)
+ 
 }
 
 

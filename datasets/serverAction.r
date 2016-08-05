@@ -10,7 +10,7 @@ datasets <- prepareUCIdata(path,zones)
 
 
 
-trainedModels<-trainModels(train_s,train_pca,test_s)
+trainedModels<-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
 
 
 temp<-NULL
@@ -182,10 +182,12 @@ crossValidateTree(datasets$train_s,datasets$test_s)
 
 
 
-test <- dplyr::select(test_s,-idZ)
+test <- dplyr::select(datasets$test_s,-idZ)
 
 
-vote <- MatrixTestBayesianVote(test,trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,train_s)
+vote <- MatrixTestBayesianVote(test,trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
+
+
 
 error <- mean(vote == dplyr::select(test_s,idZ))
 
