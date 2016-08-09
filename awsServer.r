@@ -20,4 +20,4 @@ datasets <- prepareUCIdata(trainPath,zones)
 
 setwd("/home/ec2-user/machinelearning_R")
 
-saveRDS(datasets,"prepared-data/data1.rds")
+saveRDS(datasets,"prepared-data/UCIdata.rds")
