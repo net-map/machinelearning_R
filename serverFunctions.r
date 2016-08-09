@@ -17,13 +17,11 @@ library(rpart)
 #take from data entries with ids in list listZones
 prepareUCIdata <- function (path,listZones){
   
-  #set directory
-  setwd(path)
+  filePath <- file.path(path,"trainingData.csv")
   
-  dataset <- read.csv("trainingData.csv",header = TRUE,sep=",")
+  dataset <- read.csv(filePath,header = TRUE,sep=",")
   
-  #datasetV <- read.csv("validationData.csv",header = TRUE,sep=",")
-  
+
   
   #TESTE 2 zonas
   #fdataset<-dplyr::filter(dataset,SPACEID%in%c(110,111))
