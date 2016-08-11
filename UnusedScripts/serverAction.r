@@ -66,19 +66,29 @@ plot(neuronList,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# ne
 #K-FOLD KNN CROSS VALIDATION 
 #KNN error list
 KNNerrorList<-NULL
+testsList <- NULL
 kNumber <- 10
 flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
 
-
-kernelList <- c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal")
+vizinhosList <- c(1,2,3,4,5,6,7,8,9,10)
+#kernelList <- c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal")
 # 2~4 vizinhos parece ser top
 #distancia manhattan eh certamente a melhor
+for (j in 1:20){
+  flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+  
 for (i in 1:kNumber){
-  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],]))
+  
+  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],],vizinhosList[i]))
+}
+  testsList <- cbind(testsList,KNNerrorList)
+  KNNerrorList <- NULL
 }
 
 
-plot(vizinhosList,KNNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 10-Fold para KNN\n Distancia Euclidiana")
+
+
+plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 10-Fold para KNN\n Distancia Euclidiana")
 
 
 
@@ -197,7 +207,7 @@ error <- mean(vote == dplyr::select(test_s,idZ))
 
 
 
-datasets <- prepareUCIdata2(path,0,1)
+datasets <- prepareUCIdata2(path,0,2)
 
 trainedModels<-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
 
