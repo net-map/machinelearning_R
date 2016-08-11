@@ -11,6 +11,122 @@ library(nnet)
 library(neuralnet)
 library(gridExtra)
 library(rpart)
+library(RWeka)
+
+
+
+
+#prepare UCI dataset, first by findind it in "path"
+#then, take only measures specified by floor and building
+prepareUCIdata2 <- function (path,building,floor){
+  
+  #building: 0, 1 , 2
+  #floor : 0,1,2,3,4
+  
+  filePath <- file.path(path,"trainingData.csv")
+  dataset <- read.csv(filePath,header = TRUE,sep=",")
+  
+  
+  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building)
+
+  names(fdataset)[525] <- "idZ"
+  tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
+  tidyData$idZ <- as.factor(tidyData$idZ)
+  
+  
+  #Eliminate useless features
+  bol <- tidyData == 100
+  
+  tidyData[bol] = -120
+  
+  discard <- NULL
+  for (col in  1:ncol(bol)){
+    if( mean( bol[,col]) == 1){
+      discard <- cbind(discard,col)
+    }
+    
+  }
+  
+  #remove all entries from discard list
+  tidyData <- tidyData[,-discard] 
+  
+  
+  # Scaling data
+  
+  idZ <- tidyData$idZ
+  
+  
+  tidyData <- dplyr::select(tidyData,-idZ) + 120
+  
+  tidyData <- cbind(idZ,tidyData)
+  
+  
+  #PCA .95 threshold
+  PCA  <- caret::preProcess(dplyr::select(tidyData,-idZ),method=c("center","scale","pca"))
+  #save PCA parameters for future conversion
+  assign("PCA",PCA,.GlobalEnv)
+  
+  saveRDS(PCA,"pca.rds")
+  
+  #project data into PCA space
+  scaledPCA <- predict(PCA, dplyr::select(tidyData,-idZ))
+  
+  #IDZ IS NOW ON INDEX 1! REMEMBER THAT FOR GOD'S SAKE!
+  scaledPCA <- cbind(idZ,scaledPCA)
+  
+  #NON PCA SCALING
+  preProc  <- caret::preProcess(tidyData)
+  scaled <- predict(preProc, tidyData)
+  
+  
+  #IDZ IS NOW ON INDEX 1! REMEMBER THAT FOR GOD'S SAKE!
+  scaled <- cbind(idZ,dplyr::select(scaled,-idZ))
+  
+  assign("scaled",scaled,.GlobalEnv)
+  
+  
+  
+  #set.seed(31415)
+  
+  
+  #TRAIN AND TEST SET SPLIT
+  
+  index <- sample(1:nrow(tidyData),round(0.8*nrow(tidyData)))
+  #Train and test UNESCALED
+  train <- tidyData[index,]
+  test <- tidyData[-index,]
+  assign("train",train,.GlobalEnv)
+  assign("test",test,.GlobalEnv)
+  
+  
+  
+  #Train and test SCALED
+  train_s <- scaled[index,]
+  test_s <- scaled[-index,]
+  
+  assign("train_s",train_s,.GlobalEnv)
+  assign("test_s",test_s,.GlobalEnv)
+  
+  
+  #Train and test in PCA space
+  train_pca <- scaledPCA[index,]
+  test_pca <- scaledPCA[-index,]
+  
+  assign("train_pca",train_pca,.GlobalEnv)
+  assign("test_pca",test_pca,.GlobalEnv)
+  
+  
+  
+  dataList <- list("train" = train, "train_s" = train_s,"train_pca" = train_pca,"test" =test, "test_s" = test_s,"test_pca" = test_pca)
+  
+  return(dataList)
+  
+  
+  
+}
+
+
+
 
 
 #prepare UCI dataset, first by findind it in "path"
@@ -144,10 +260,10 @@ trainModels <- function(train,trainPCA,test){
   #DECISION TREE
 
   
-  tree <- rpart(idZ~.,data=train,method="class")
-  
+  tree <- J48(idZ~.,data=train)
+  #tree <- rpart(idZ~.,data=train,method="class")
   #prune to avoid overfitting
-  tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
+  #tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
   
   assign("Tree",tree,.GlobalEnv)
   
@@ -299,12 +415,12 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   idZKNN <- knnPrediction
   
   #DECISION TREE PREDICTION
-  predictionTree <- predict(TreeModel,test)
+  predictionTree <- predict(TreeModel,test,type="probability")
   
   idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
   treeProb <-  predictionTree
 
-  
+  #+treeProb
   sumProb <-  knnProb + nnProb +svmProb +treeProb
   #get class with maximum summed probability
   idZWeightedProb <-  as.numeric(as.character(factors[apply (sumProb,1,function(x) which.max(x))]))
@@ -441,8 +557,8 @@ singleTestMatrix <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   #DECISION TREE PREDICTION
   predictionTree <- predict(Treemodel,test)
   
-  idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
-  
+  #idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
+  idZtree <- as.numeric(as.character(factors[predictionTree]))
   
   
   
@@ -518,9 +634,9 @@ singleTestTree <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   #DECISION TREE PREDICTION
   predictionTree <- predict(Treemodel,test)
   
-  idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
+  #idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
   
-  return(as.numeric(as.character(idZtree)))
+  return(as.numeric(as.character(factors[predictionTree])))
 }
 
 
@@ -548,9 +664,9 @@ singleTestKNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-crossValidateKNN <- function (trainingSet,validationSet){
+crossValidateKNN <- function (trainingSet,validationSet,k){
   
-  knnTrain<-kknn(formula=idZ ~. , k=3,distance=1, train=trainingSet,test=validationSet,kernel="optimal")
+  knnTrain<-kknn(formula=idZ ~. , k=k,distance=1, train=trainingSet,test=validationSet,kernel="optimal")
   
   
   

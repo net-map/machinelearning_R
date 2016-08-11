@@ -1,7 +1,7 @@
 
 
 path <- "~/Documents/machinelearning_R/datasets"
-path <- "~/Documents/netmap/datasets"
+path <- "~/Documents/netmap/raw-data"
 
 
 
@@ -192,8 +192,41 @@ vote <- MatrixTestBayesianVote(test,trainedModels$NeuralNet,trainedModels$SVM,tr
 error <- mean(vote == dplyr::select(test_s,idZ))
 
 
+###################################
+####TESTS IN FLOORS################
+
+
+
+datasets <- prepareUCIdata2(path,0,1)
+
+trainedModels<-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
+
+simpleVote <- singleTestMatrix(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree)
+weightedVote <- MatrixTestBayesianVote(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
+
+NN <-  singleTestNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
+SVM <- singleTestSVM(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
+KNN <- singleTestKNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
+Tree <-  singleTestTree(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
+correct <- as.numeric(dplyr::select(datasets$test_s,idZ)[[1]])
+factors<- trainedModels$NeuralNet$model.list$response
+factors <- gsub("`",'',factors)
+correct <- as.numeric(factors[correct])
 
 
 
 
+allResults <- rbind(allResults,cbind(simpleVote,NN,SVM,KNN,Tree,correct,weightedVote))
 
+
+
+
+rateVote <- mean(allResults[,1]==allResults[,6])
+rateNN <- mean(allResults[,2]==allResults[,6])
+rateSVM <- mean(allResults[,3]==allResults[,6])
+rateKNN <- mean(allResults[,4]==allResults[,6])
+rateTree <- mean(allResults[,5]==allResults[,6])
+rateWeight <- mean(allResults[,7]==allResults[,6])
+
+bigResults <- rbind(bigResults,c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree,zNumber))
+print( c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree))
