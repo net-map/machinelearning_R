@@ -326,15 +326,15 @@ trainModels <- function(train,trainPCA,test){
   #
   #
   
-  knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
+  #knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
   #knnTrain<-kknn(formula = idZ ~. , k=3,scale=FALSE,kernel = "optimal",distance=1, train=train,test=test)
   
-  assign("KNN",knnTrain,.GlobalEnv)
-  saveRDS(knnTrain,"KNN.rds")
+  #assign("KNN",knnTrain,.GlobalEnv)
+  #saveRDS(knnTrain,"KNN.rds")
   
   
   
-  modelList <- list("NeuralNet" = nn,"KNN"= knnTrain,"SVM" = mylogit1,"Tree" = tree)
+  modelList <- list("NeuralNet" = nn,"SVM" = mylogit1,"Tree" = tree)
   
   return (modelList)
   
@@ -408,7 +408,7 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   
   
   #KNN PREDICTION
-  knnTrain<-kknn(formula=idZ ~. , k=3,distance=1, train=train,test=test,kernel="optimal")
+  knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=test,kernel="optimal")
   knnProb <- knnTrain$prob
   knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
   knnPrediction <- factors[knnPrediction]
@@ -521,7 +521,7 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
 #
 #
 #performs a voting test on a MATRIX without the ZoneID
-singleTestMatrix <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestMatrix <- function (test,NNmodel,SVMmodel,Treemodel,train){
   
   
   
@@ -549,10 +549,12 @@ singleTestMatrix <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   
   #KNN PREDICTION
-  knnPrediction <- as.numeric(predict(KNNmodel,test))
+  knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=test,kernel="optimal")
+  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+  
   
   #get idz computed
-  idZKNN <- as.numeric(as.character(factors[knnPrediction]))
+  idZKNN <- knnPrediction
   
   #DECISION TREE PREDICTION
   predictionTree <- predict(Treemodel,test)
@@ -641,7 +643,7 @@ singleTestTree <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-singleTestKNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestKNN <- function (test,NNmodel,train){
   
 
   
@@ -652,21 +654,22 @@ singleTestKNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
   
   
+
   #KNN PREDICTION
-  knnPrediction <- as.numeric(predict(KNNmodel,test))
+  knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=test,kernel="optimal")
+  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+
   
-  #get idz computed
-  idZKNN <- factors[knnPrediction]
-  
-  return(as.numeric(as.character(idZKNN)))
+ 
+  return(knnPrediction)
   
 }
 
 
 
-crossValidateKNN <- function (trainingSet,validationSet,k){
+crossValidateKNN <- function (trainingSet,validationSet,k,dist){
   
-  knnTrain<-kknn(formula=idZ ~. , k=k,distance=1, train=trainingSet,test=validationSet,kernel="optimal")
+  knnTrain<-kknn(formula=idZ ~. , k=k,distance=dist, train=trainingSet,test=validationSet,kernel="optimal")
   
   
   

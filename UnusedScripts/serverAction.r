@@ -3,8 +3,9 @@
 path <- "~/Documents/machinelearning_R/datasets"
 path <- "~/Documents/netmap/raw-data"
 
+zones <- c(101, 102 ,103 ,104, 105, 106, 107, 108, 109, 110, 111, 112,113,114,115,116,117,118,119,120,121)
 
-
+zones <- c(101,102,103,104,105)
 #feed the location of the dataset to the function
 datasets <- prepareUCIdata(path,zones)
 
@@ -62,33 +63,6 @@ plot(neuronList,NNerrorList[,2],pch="Δ",ylab = "Erro de Validação",xlab="# ne
 
 
 
-
-#K-FOLD KNN CROSS VALIDATION 
-#KNN error list
-KNNerrorList<-NULL
-testsList <- NULL
-kNumber <- 10
-flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
-
-vizinhosList <- c(1,2,3,4,5,6,7,8,9,10)
-#kernelList <- c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal")
-# 2~4 vizinhos parece ser top
-#distancia manhattan eh certamente a melhor
-for (j in 1:20){
-  flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
-  
-for (i in 1:kNumber){
-  
-  KNNerrorList <- rbind(KNNerrorList,crossValidateKNN(scaled[-flds[[i]],],scaled[flds[[i]],],vizinhosList[i]))
-}
-  testsList <- cbind(testsList,KNNerrorList)
-  KNNerrorList <- NULL
-}
-
-
-
-
-plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Validação",xlab="K-Value para KNN",main="Cross-Validation 10-Fold para KNN\n Distancia Euclidiana")
 
 
 
@@ -211,12 +185,12 @@ datasets <- prepareUCIdata2(path,0,2)
 
 trainedModels<-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
 
-simpleVote <- singleTestMatrix(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree)
+simpleVote <- singleTestMatrix(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
 weightedVote <- MatrixTestBayesianVote(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
 
 NN <-  singleTestNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
 SVM <- singleTestSVM(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
-KNN <- singleTestKNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
+KNN <- singleTestKNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet, datasets$train_s)
 Tree <-  singleTestTree(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
 correct <- as.numeric(dplyr::select(datasets$test_s,idZ)[[1]])
 factors<- trainedModels$NeuralNet$model.list$response
