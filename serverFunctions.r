@@ -424,6 +424,11 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   treeProb <-  predictionTree
 
   #+treeProb
+  print(str(knnProb))
+  print(str(nnProb))
+  print(str(svmProb))
+  print(str(treeProb))
+  
   sumProb <-  knnProb + nnProb +svmProb +treeProb
   #get class with maximum summed probability
   idZWeightedProb <-  as.numeric(as.character(factors[apply (sumProb,1,function(x) which.max(x))]))

@@ -185,6 +185,7 @@ datasets <- prepareUCIdata2(path,0,2)
 
 trainedModels<-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
 
+
 simpleVote <- singleTestMatrix(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
 weightedVote <- MatrixTestBayesianVote(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
 
@@ -214,3 +215,22 @@ rateWeight <- mean(allResults[,7]==allResults[,6])
 
 bigResults <- rbind(bigResults,c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree,zNumber))
 print( c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree))
+
+
+
+
+
+####TESTS WITH INCREASING NUMBER OF TRAIN POINTS
+datasets <- prepareUCIdata2(path,0,2)
+
+for ( i in 11:nrow(datasets$train_s)){
+  trainedModels<-trainModels(datasets$train_s[10:i,],datasets$train_pca,datasets$test_s)
+  weightedVote <- MatrixTestBayesianVote(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s[10:i,])
+  correct <- as.numeric(dplyr::select(datasets$test_s,idZ)[[1]])
+  factors<- trainedModels$NeuralNet$model.list$response
+  factors <- gsub("`",'',factors)
+  correct <- as.numeric(factors[correct])
+  print(mean(correct==weightedVote))
+  break
+}
+
