@@ -76,6 +76,7 @@ prepareUCIdata2 <- function (path,building,floor){
   
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
+  saveRDS(preProc,"trainedModels/scale.rds")
   scaled <- predict(preProc, tidyData)
   
   
@@ -201,7 +202,7 @@ prepareUCIdata <- function (path,listZones){
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
   assign("scale",preProc,.GlobalEnv)
-  
+  saveRDS(preProc,"trainedModels/scale.rds")
   scaled <- predict(preProc, tidyData)
   
   
@@ -263,6 +264,10 @@ trainModels <- function(train,trainPCA,test){
 
   
   tree <- J48(idZ~.,data=train)
+  
+  rJava::.jcache(tree$classifier)
+   
+  
   #tree <- rpart(idZ~.,data=train,method="class")
   #prune to avoid overfitting
   #tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
@@ -539,11 +544,11 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   
   testVector[is.na(testVector)] <- -120
   
-  
+ 
   #scale new data!
   testVector <- predict(scaleModel,testVector)
   
-  print(testVector)
+
   #compute projection of test vector into PCA data used by the Neural Network
   #NOT USING THIS RIGHT NOW
   #PCAvector <- predict(PCA,testVector)
@@ -551,7 +556,8 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   
   
   #NEURALNET PREDICTION
-  nnPrediction <-apply(neuralnet::compute(NNmodel,testVector)$net.result,1,function(x) which.max(x))
+  nnProb <- neuralnet::compute(NNmodel,testVector)$net.result
+  nnPrediction <-apply(nnProb,1,function(x) which.max(x))
   #get idz computed
   idZNN <- factors[nnPrediction]
   
@@ -559,25 +565,26 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   #SVM PREDICTION
   svmPrediction <- as.numeric(predict(SVMmodel,testVector))
   
+  svmProb <- attr(predict(SVMmodel,testVector,probability=TRUE),"probabilities")  
+  
+  
   #get idz computed
   idZSVM <- factors[svmPrediction]
   
   
   #KNN PREDICTION
   knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=testVector,kernel="optimal")
+  knnProb <- knnTrain$prob
   #get idz computed
-  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
-  idZKNN <- knnPrediction
+  idZKNN <- as.numeric(as.character(knnTrain$fitted.values))
+   
   
   #DECISION TREE PREDICTION
   predictionTree <- predict(Treemodel,testVector,type="probability")
   
+  treeProb <- predictionTree
+  
   idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
-  
-  #idz from Tree
-  idZtree <- as.numeric(as.character(factors[predictionTree]))
-  
-  
   
   
   
@@ -586,9 +593,15 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   
   results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
   
+  bayesianSum <- knnProb+treeProb+svmProb+nnProb
+  
+  #get factor with more summed probability
+  idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
   
   #get most recurring result
   idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
+
+  
   
   #finally return calculated idZ
   return (idZVote)

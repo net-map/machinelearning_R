@@ -1,9 +1,9 @@
 
-#recieve input zones from command line
+#recieve input building and floor from command line
 args = commandArgs(trailingOnly=TRUE)
 #default values
 if (length(args)==0){
-  args <- c("112","113","114")
+  args <- c(0,1)
 }
 
 #convert to numbers
@@ -15,7 +15,7 @@ source("serverFunctions.r")
 dataPath <- "raw-data"
 
 
-datasets <- prepareUCIdata(dataPath,zones)
+datasets <- prepareUCIdata2(dataPath,args[1],args[2])
 
 
 saveRDS(datasets,"prepared-data/UCIdata.rds")

@@ -1,3 +1,5 @@
+
+source("serverFunctions.r")
 #recieve input data path from command line
 args = commandArgs(trailingOnly=TRUE)
 #default location
@@ -12,5 +14,6 @@ datasets <- readRDS(dataPath)
 
 trainedModels <- trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
 
-save(trainedModels,file="trainedModels/UCImodels.RData")
+
+saveRDS(trainedModels,"trainedModels/UCImodels.rds")
 
