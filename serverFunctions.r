@@ -200,6 +200,8 @@ prepareUCIdata <- function (path,listZones){
   
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
+  assign("scale",preProc,.GlobalEnv)
+  
   scaled <- predict(preProc, tidyData)
   
   
@@ -265,8 +267,8 @@ trainModels <- function(train,trainPCA,test){
   #prune to avoid overfitting
   #tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
   
-  assign("Tree",tree,.GlobalEnv)
-  
+  #assign("Tree",tree,.GlobalEnv)
+  #saveRDS(tree,"tree.rds")
   
   
   
@@ -299,8 +301,8 @@ trainModels <- function(train,trainPCA,test){
   neuron <- 210
   
   nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
-  assign("NeuralNet",nn,.GlobalEnv)
-  saveRDS(nn,"NeuralNet.rds")
+  #assign("NeuralNet",nn,.GlobalEnv)
+  #saveRDS(nn,"NeuralNet.rds")
   
   #SUPPORT VECTOR MACHINE
   
@@ -315,8 +317,8 @@ trainModels <- function(train,trainPCA,test){
   kernelType <- "radial" 
   mylogit1 <-svm(xi,yi,kernel = kernelType,scale=FALSE,probability = TRUE)
   
-  assign("SVM",mylogit1,.GlobalEnv)
-  saveRDS(mylogit1,"SVM.rds")
+  #assign("SVM",mylogit1,.GlobalEnv)
+  #saveRDS(mylogit1,"SVM.rds")
   
   
   
@@ -337,11 +339,7 @@ trainModels <- function(train,trainPCA,test){
   modelList <- list("NeuralNet" = nn,"SVM" = mylogit1,"Tree" = tree)
   
   return (modelList)
-  
-  
-  
-  
-  
+
 }
 
 
@@ -490,6 +488,7 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   
   #KNN PREDICTION
+  print(testVector)
   knnPrediction <- as.numeric(predict(KNNmodel,testVector))
   
   #get idz computed
@@ -516,6 +515,106 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   return (idZVote)
   
 }
+
+singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemodel){
+  
+  
+  
+  #get names of columns used to train classifiers
+  names <- colnames(SVMmodel$SV)
+  
+  
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+  
+  
+  #scale new data!
+  testVector <- predict(scaleModel,testVector)
+  
+  print(testVector)
+  #compute projection of test vector into PCA data used by the Neural Network
+  #NOT USING THIS RIGHT NOW
+  #PCAvector <- predict(PCA,testVector)
+  
+  
+  
+  #NEURALNET PREDICTION
+  nnPrediction <-apply(neuralnet::compute(NNmodel,testVector)$net.result,1,function(x) which.max(x))
+  #get idz computed
+  idZNN <- factors[nnPrediction]
+  
+  
+  #SVM PREDICTION
+  svmPrediction <- as.numeric(predict(SVMmodel,testVector))
+  
+  #get idz computed
+  idZSVM <- factors[svmPrediction]
+  
+  
+  #KNN PREDICTION
+  knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=testVector,kernel="optimal")
+  #get idz computed
+  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+  idZKNN <- knnPrediction
+  
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(Treemodel,testVector,type="probability")
+  
+  idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
+  
+  #idz from Tree
+  idZtree <- as.numeric(as.character(factors[predictionTree]))
+  
+  
+  
+  
+  
+  
+  
+  
+  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
+  
+  
+  #get most recurring result
+  idZVote <-  as.numeric(names(sort(table(results),decreasing = TRUE)[1])) 
+  
+  #finally return calculated idZ
+  return (idZVote)
+  
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #
 #
