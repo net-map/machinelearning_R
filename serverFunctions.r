@@ -399,15 +399,13 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   
   
   #SVM PREDICTION
-  svmPrediction <- as.numeric(predict(SVMmodel,test))
+  #svmPrediction <- as.numeric(predict(SVMmodel,test))
   
-  svmProb <- predict(SVMmodel,test,probability=TRUE)
-  svmProb <- attr(svmProb,"probabilities")  
-
+  svmProb <- attr(predict(SVMmodel,test,probability=TRUE),"probabilities")  
   
 
   #get idz computed
-  idZSVM <- as.numeric(as.character(factors[svmPrediction]))
+  #idZSVM <- as.numeric(as.character(factors[svmPrediction]))
   
   
   #KNN PREDICTION
@@ -424,10 +422,15 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   treeProb <-  predictionTree
 
   #+treeProb
+  print("KNN")
   print(str(knnProb))
+  print("NN")
   print(str(nnProb))
+  print("SVM")
   print(str(svmProb))
+  print("TREE")
   print(str(treeProb))
+  
   
   sumProb <-  knnProb + nnProb +svmProb +treeProb
   #get class with maximum summed probability
@@ -702,7 +705,7 @@ singleTestMatrix <- function (test,NNmodel,SVMmodel,Treemodel,train){
 
 
 
-singleTestNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestNN <- function (test,NNmodel,SVMmodel,Treemodel){
 
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
@@ -719,7 +722,7 @@ singleTestNN <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 }
 
 
-singleTestSVM <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestSVM <- function (test,NNmodel,SVMmodel,Treemodel){
   
   
   
@@ -741,7 +744,7 @@ singleTestSVM <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
 
 
 
-singleTestTree <- function (test,NNmodel,SVMmodel,KNNmodel,Treemodel){
+singleTestTree <- function (test,NNmodel,SVMmodel,Treemodel){
 
   
   
