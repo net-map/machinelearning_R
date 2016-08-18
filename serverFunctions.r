@@ -18,7 +18,7 @@ library(RWeka)
 
 #prepare UCI dataset, first by findind it in "path"
 #then, take only measures specified by floor and building
-prepareUCIdata2 <- function (path,building,floor){
+prepareUCIdata2 <- function (path,building,floor,zones=NULL){
   
   #building: 0, 1 , 2
   #floor : 0,1,2,3,4
@@ -26,9 +26,11 @@ prepareUCIdata2 <- function (path,building,floor){
   filePath <- file.path(path,"trainingData.csv")
   dataset <- read.csv(filePath,header = TRUE,sep=",")
   
+  if(is.null(zones)){  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building)}
+  else              {  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,SPACEID%in%zones) }
   
-  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building)
-
+  
+  
   names(fdataset)[525] <- "idZ"
   tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
   tidyData$idZ <- as.factor(tidyData$idZ)
@@ -76,7 +78,7 @@ prepareUCIdata2 <- function (path,building,floor){
   
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
-  saveRDS(preProc,"trainedModels/scale.rds")
+  #saveRDS(preProc,"trainedModels/scale.rds")
   scaled <- predict(preProc, tidyData)
   
   
@@ -202,7 +204,7 @@ prepareUCIdata <- function (path,listZones){
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
   assign("scale",preProc,.GlobalEnv)
-  saveRDS(preProc,"trainedModels/scale.rds")
+  #saveRDS(preProc,"trainedModels/scale.rds")
   scaled <- predict(preProc, tidyData)
   
   
