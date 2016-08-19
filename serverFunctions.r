@@ -80,6 +80,7 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL){
   preProc  <- caret::preProcess(tidyData)
   #saveRDS(preProc,"trainedModels/scale.rds")
   scaled <- predict(preProc, tidyData)
+  assign("preProc",preProc,.GlobalEnv)
   
   
   #IDZ IS NOW ON INDEX 1! REMEMBER THAT FOR GOD'S SAKE!
@@ -267,6 +268,8 @@ trainModels <- function(train,trainPCA,test){
   
   tree <- J48(idZ~.,data=train)
   
+  
+  #serialize java object object
   rJava::.jcache(tree$classifier)
    
   
@@ -316,15 +319,18 @@ trainModels <- function(train,trainPCA,test){
   #We must separate data into X matrix for the features and Y for the response vector with the classes
   #suppressWarnings(attach(train_s))
   #detach(train_s)
-  xi<- subset(train,select= - idZ)
-  yi <- train$idZ
-  
+  #xi<- dplyr::select(train,-idZ)
+  #yi <- train$idZ
   
   
   kernelType <- "radial" 
-  mylogit1 <-svm(xi,yi,kernel = kernelType,scale=FALSE,probability = TRUE)
+  #mylogit1 <-svm(x=xi,y=yi,kernel = kernelType,scale=FALSE,probability = TRUE)
   
-  #assign("SVM",mylogit1,.GlobalEnv)
+  TESTE <- train
+  assign("TESTE",train,.GlobalEnv)
+  
+  mylogit1 <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
+  assign("SVM",mylogit1,.GlobalEnv)
   #saveRDS(mylogit1,"SVM.rds")
   
   
@@ -403,6 +409,7 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   #SVM PREDICTION
   #svmPrediction <- as.numeric(predict(SVMmodel,test))
   
+
   svmProb <- attr(predict(SVMmodel,test,probability=TRUE),"probabilities")  
   
 
@@ -424,15 +431,7 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   treeProb <-  predictionTree
 
   #+treeProb
-  print("KNN")
-  print(str(knnProb))
-  print("NN")
-  print(str(nnProb))
-  print("SVM")
-  print(str(svmProb))
-  print("TREE")
-  print(str(treeProb))
-  
+
   
   sumProb <-  knnProb + nnProb +svmProb +treeProb
   #get class with maximum summed probability
@@ -942,4 +941,10 @@ crossValidateTree <- function (trainset,testset){
   
   
   
+}
+
+
+#x is a list 
+montaLista<- function(x){
+  return (list(BSSID=x[1],RSSI=x[2]))
 }

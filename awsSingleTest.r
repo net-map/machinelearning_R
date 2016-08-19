@@ -49,3 +49,4 @@ datasets <- readRDS("prepared-data/UCIdata.rds")
 
 
 print(singleTest2(transposedData,datasets$train_s,preProc,trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree) )
+print(singleTest2(dplyr::select(test_s,-idZ),datasets$train_s,preProc,trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree) )
