@@ -10,7 +10,6 @@ if (length(args)==0){
 
 mongo <- mongo.create(host="52.67.105.105:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
 
-
 if(mongo.is.connected(mongo) == TRUE) {
   db <- "server_api_production"
   
@@ -27,65 +26,82 @@ if(mongo.is.connected(mongo) == TRUE) {
   #retrive all zones from that facility
   listZones <- mongo.find.all(mongo,zones,list(facility_id=facilityID))
   
+  rawData <- NULL
+  
   #for each zone found
-  for (i in 1:length(listZones)){
+  for (z in 1:length(listZones)){
     
     #get ID of that zone from list of lists
-    zoneID <- listZones[[i]][[1]]
+    zoneID <- listZones[[z]][[1]]
     
     acquisition <- paste(db,"acquisitions",sep = ".")
     
     listAcquisitions <- mongo.find.all(mongo,acquisition,list(zone_id=zoneID))
     
+    lista <- NULL
     
-    tabela<-NULL
-    for (i in 1:length(listAcquisitions)){
-      
-      listAP <- listAcquisitions[[i]]$access_points
-      
+    for (a in 1:length(listAcquisitions)){
+      listAP <- listAcquisitions[[a]]$access_points
+      acquiID <- listAcquisitions[[a]]$`_id`
       #get relevant informantion from list
       temp <- lapply(listAP,function(x) return (c(x$BSSID,x$RSSI)))
       
-      #change names
-      temp2<- lapply(temp,montaLista)
+      #reshape list and add relevant IDs
+      temp2<- lapply(temp,montaLista,zoneID=zoneID,acquiID=acquiID)
       
       #create list in desirable format
-      lista <- NULL
-      for (i in 1:length(temp2)){
-         lista <- rbind(lista,temp2[[i]])
+      
+      #unlist lists 
+      for (l in 1:length(temp2)){
+         lista <- rbind(lista,unlist(temp2[[l]]))
       }
       
         
       
-      tabela <- merge(lista,tabela,by="BSSID")
     }
     
-    
-    
+    rawData <- rbind(rawData,lista)
     
   }
   
   
+  #we DONT want strings to be turned to factors!
+  rawDataDF<-data.frame(rawData,stringsAsFactors = FALSE)
+  
+  names(rawDataDF)<- c("BSSID","RSSI","idZ","acquiID")
+  
+  rawDataDF$RSSI <- as.numeric(rawDataDF$RSSI)
+  
+  
+  molten <- melt(rawDataDF,id.vars=c("idZ","acquiID","BSSID"), value.name = "RSSI",measure.vars = c("RSSI"))
+  
+  molten$variable <- NULL
+  
+  #gambiarra
+  molten <- molten[-14,]
+  
+  attach(rawDataDF)
+  tidyData <- reshape2::dcast(molten,   acquiID+ idZ  ~ BSSID, value.var = 'RSSI')
+  detach(rawDataDF)
   
   
 }else{
-  print("ERROOOOOOOOOOU")
+  print("Could not connect to Mongo! DAMN IT LIRA")
 }
 
 
 
-
 #convert to numbers
-zones <- as.numeric(args)
+#zones <- as.numeric(args)
 
-source("serverFunctions.r")
-
-
-dataPath <- "raw-data"
+#source("serverFunctions.r")
 
 
-datasets <- prepareUCIdata2(dataPath,args[1],args[2])
+#dataPath <- "raw-data"
 
 
-saveRDS(datasets,"prepared-data/UCIdata.rds")
+#datasets <- prepareUCIdata2(dataPath,args[1],args[2])
+
+
+#saveRDS(datasets,"prepared-data/UCIdata.rds")
 

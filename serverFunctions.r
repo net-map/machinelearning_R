@@ -945,6 +945,6 @@ crossValidateTree <- function (trainset,testset){
 
 
 #x is a list 
-montaLista<- function(x){
-  return (list(BSSID=x[1],RSSI=x[2]))
+montaLista<- function(x,zoneID,acquiID){
+  return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))
 }
