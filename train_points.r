@@ -1,5 +1,5 @@
 
-
+library(plotly)
 #0.8 train-test split
 dataPath <- "raw-data"
 
@@ -12,7 +12,7 @@ allResults <- NULL
 floorsList <- c(0,1,2,3)
 
 rates<-NULL
-#names(rates)<- c("rateVote","rateWeight","rateKNN","rateTree","rateSVM","rateNN","Floor")
+
 for (i in floorsList){
   
   datasets <- prepareUCIdata2(dataPath,0,i)
@@ -50,7 +50,14 @@ for (i in floorsList){
   
 }
 
+rates<-data.frame(rates)
+names(rates)<- c("rateVote","rateWeight","rateKNN","rateTree","rateSVM","rateNN","Floor")
+rates <- t(rates)
+rates$algoritmo <- c("Voto Simples","Bayes","KNN","Tree","SVM","NN")
 
 grid.table(rates,rows<-c("0","1","2","3"),cols <- c("rateVote","rateWeight","rateKNN","rateTree","rateSVM","rateNN","Andar"))
+
+
+ggplot(data=rates,aes(x=rates$Floor, y=dplyr::select(rates,-Floor))) + geom_bar(stat="identity", position=position_dodge())
 
 
