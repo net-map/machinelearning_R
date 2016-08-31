@@ -1,9 +1,14 @@
 #K-FOLD KNN CROSS VALIDATION 
 #KNN error list
+
+datasets <- prepareUCIdata2(path,1,0,justInside = TRUE)
+
 KNNerrorList<-NULL
 testsList <- NULL
 kNumber <- 10
 flds <- createFolds(scaled$idZ, k = kNumber, list = TRUE, returnTrain = FALSE)
+
+
 
 #distList <- c(1,2)
 vizinhosList <- c(1,2,3,4,5,6,7,8,9,10)
@@ -24,5 +29,5 @@ for (j in 1:20){
 
 
 
-plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Validação",xlab="Valor de K para KNN",main="Média de 20 testes de Cross-Validation 10-Fold para KNN\n 21 Zonas Usadas")
+plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Validação",xlab="Valor de K para KNN",main="Média de 20 testes de Cross-Validation 10-Fold para KNN\n 25 Zonas Usadas")
 #barplot(apply(testsList,1,mean),names.arg = c("Distância Manhattan","Distância Euclidiana"),ylab = "Erro de Validação",main = "Diferença do Erro de Validação para Diferentes Métricas de Distância\n KNN")

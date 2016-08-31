@@ -18,7 +18,8 @@ library(RWeka)
 
 #prepare UCI dataset, first by findind it in "path"
 #then, take only measures specified by floor and building
-prepareUCIdata2 <- function (path,building,floor,zones=NULL){
+#justInside is a boolean that specifies if the data points should be the ones measured INSIDE the rooms
+prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
   
   #building: 0, 1 , 2
   #floor : 0,1,2,3,4
@@ -26,9 +27,10 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL){
   filePath <- file.path(path,"trainingData.csv")
   dataset <- read.csv(filePath,header = TRUE,sep=",")
   
-  if(is.null(zones)){  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building)}
-  else              {  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,SPACEID%in%zones) }
-  
+  if(is.null(zones) && justInside==FALSE ){  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building)}
+  else  if  (!is.null(zones) && justInside==FALSE)  {  fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,SPACEID%in%zones) }
+  else if (!is.null(zones) && justInside==TRUE){fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,SPACEID%in%zones,RELATIVEPOSITION ==1)}
+  else if (is.null(zones) && justInside==TRUE){fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,RELATIVEPOSITION ==1)}
   
   
   names(fdataset)[525] <- "idZ"
