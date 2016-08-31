@@ -97,11 +97,11 @@ if(mongo.is.connected(mongo) == TRUE) {
 #source("serverFunctions.r")
 
 
-#dataPath <- "raw-data"
+dataPath <- "prepared-data"
 
 
 #datasets <- prepareUCIdata2(dataPath,args[1],args[2])
 
 
-#saveRDS(datasets,"prepared-data/UCIdata.rds")
+saveRDS(tidyData,paste(dataPath,"/",args,".rds",sep=""))
 
