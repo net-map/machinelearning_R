@@ -1,8 +1,9 @@
 
 
 path <- "~/Documents/machinelearning_R/datasets"
-#datasets <- prepareUCIdata2(path,1,0,justInside = TRUE)
-datasets <- prepareUCIdata2(path,1,0)
+datasets <- prepareUCIdata2(path,1,2)
+#justInside = TRUE
+#datasets <- prepareUCIdata2(path,1,0)
 
 train <- datasets$train_s
 testIDZ <- datasets$test_s$idZ
@@ -16,7 +17,7 @@ test    <- dplyr::select(datasets$test_s,-idZ)
 #
 #
 tree <- J48(idZ~.,data=train)
-
+treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
 
 
 #TRAIN NEURAL NET
@@ -91,6 +92,15 @@ predictionTree <- predict(tree,test,type="probability")
 idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
 treeProb <-  predictionTree
 
+#ADABOOST PREDICTION
+predictionTreeAda <- predict(treeAda,test,type="probability")
+idZtreeAda <-  as.numeric(as.character(factors[apply (predictionTreeAda,1,function(x) which.max(x))]))
+treeProbAda <-  predictionTreeAda
+
+
+
+
+
 
 #SVM PREDICTION
 svmProb <- attr(predict(SVM,test,probability=TRUE),"probabilities")  
@@ -113,7 +123,7 @@ smoProb <- predict(SMO,test,type="probability")
 #COMPUTE BAYESIAN VOTE
 
 #TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-bayesianSum <- knnProb+treeProb+nnProb+smoProb
+bayesianSum <- knnProb+nnProb+smoProb+treeProbAda
 
 idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
 
@@ -121,7 +131,7 @@ idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) whi
 #COMPUTE SIMPLE VOTE
 
 #TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-results <- cbind(idZKNN,idZNN,idZtree,idZSMO)
+results <- cbind(idZKNN,idZNN,idZSMO,idZtreeAda)
 
 idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
 
@@ -135,21 +145,23 @@ rateSVM <- 1- mean(idZSVM == testIDZ)
 rateNN <- 1- mean(idZNN==testIDZ)
 rateKNN <- 1- mean(idZKNN==testIDZ)
 rateTree <- 1- mean(idZtree==testIDZ)
+rateTreeAda <- 1- mean(idZtreeAda==testIDZ)
 rateSMO <- 1- mean(idZSMO==testIDZ)
 
 rateVote <- 1-mean(idZVote==testIDZ)
 rateBayas <- 1-mean(idZBayas==testIDZ)
 
 
-cat("ERROS PARA TESTE ")
+cat("ERROS PARA TESTE ","\n")
 
-cat("Erro de SVM",rateSVM)
-cat("Erro de SMO",rateSMO)
-cat("Erro de KNN",rateKNN)
-cat("Erro de J48",rateTree)
-cat("Erro de NN",rateNN)
-cat("Erro de Voto Simples",rateVote)
-cat("Erro de Voto com Peso",rateBayas)
+cat("Erro de SVM",rateSVM,"\n")
+cat("Erro de SMO",rateSMO,"\n")
+cat("Erro de KNN",rateKNN,"\n")
+cat("Erro de J48",rateTree,"\n")
+cat("Erro de J48 + ADA",rateTreeAda,"\n")
+cat("Erro de NN",rateNN,"\n")
+cat("Erro de Voto Simples",rateVote,"\n")
+cat("Erro de Voto com Peso",rateBayas,"\n")
 
 
 

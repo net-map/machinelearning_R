@@ -23,15 +23,23 @@ datasets <- prepareUCIdata2(path,1,0,justInside = TRUE)
 #      print(error)
 #}
 
-results<-NULL
+train_s <- datasets$train_s
+test_s <- datasets$test_s
 
+results<-NULL
+resultsAda<-NULL
 for (i in 10:nrow(datasets$train_s)){
   tree <- J48(idZ~.,data=train_s[1:i,])
   prediction <- predict(tree,test_s)
-  prediction2 <- predict(tree,train_s)
   testError <-1- ( mean(prediction== test_s$idZ))
-  trainError <- 1- ( mean(prediction2== train_s$idZ))
-  results <- rbind(results,c(testError,trainError))
+  results <- rbind(results,c(testError))
+  
+  treeAda <- AdaBoostM1(idZ~. , data = train_s[1:i,] ,control = Weka_control(W = list(J48, M=5)))
+  predictionAda <- predict(treeAda,test_s)
+  testErrorAda <-1- ( mean(predictionAda== test_s$idZ))
+  resultsAda <- rbind(resultsAda,c(testErrorAda))
+  
+  
 }
 
 
@@ -49,10 +57,14 @@ data <- results[,1]
 #model as n degree polynomial
 model <- lm(data~poly(x,3))
 
-plot(x=x,results[,1]*100,pch="o",ylab = "Erro de Validação",xlab="# de pontos de treino",main="Erro de Validação para J48 (C4.5)")
-
+plot(x=x,results[,1]*100,pch="o",col=alpha("green2", 0.3),ylab = "Erro de Classificação (%)",xlab="# de pontos de treino",main="Erro de Validação para J48 (C4.5)\n com e sem o algoritmo AdaBoost")
+library(scales)
 #plot scatter and tendence line
-lines(x,y=100*predict(model,data.frame(x=x)),type='l')
+lines(x,y=100*predict(model,data.frame(x=x)),type='l',col="green3")
+lines(resultsAda*100,type="p",col=alpha("purple", 0.3),pch="x")
+modelAda <- lm(resultsAda~poly(x,3))
+lines(x,y=100*predict(modelAda,data.frame(x=x)),type='l',col="purple3")
+legend("topright",fill=c("green", "purple" ) , legend = c("Sem Algoritmo","Com Algoritmo"))
 
 
 dev.off()
