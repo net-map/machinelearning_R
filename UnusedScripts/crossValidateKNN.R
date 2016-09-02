@@ -27,7 +27,9 @@ for (j in 1:20){
 }
 
 
+jpeg("~/Documents/momonografia/imagens/CrossValKNN25zonasvalorK.jpeg", width = 1800, height = 1500, units = 'px', res = 300,quality = 100)
 
 
-plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Validação",xlab="Valor de K para KNN",main="Média de 20 testes de Cross-Validation 10-Fold para KNN\n 25 Zonas Usadas")
+plot(vizinhosList,apply(testsList,1,mean),pch="Δ",ylab = "Erro de Classificação (%)",xlab="Valor de K para KNN",main="Média de 20 testes de Cross-Validation 10-Fold para KNN\n 25 Zonas Usadas")
 #barplot(apply(testsList,1,mean),names.arg = c("Distância Manhattan","Distância Euclidiana"),ylab = "Erro de Validação",main = "Diferença do Erro de Validação para Diferentes Métricas de Distância\n KNN")
+dev.off()
