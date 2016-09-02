@@ -76,7 +76,7 @@ SMO <- SMO(idZ~.,data=train)
 #########PREDICTIONS##########
 
 factors<- nn$model.list$response
-factors <- gsub('"','',factors)
+factors <- gsub("`",'',factors)
 
 
 #KNN PREDICTION
@@ -113,7 +113,7 @@ smoProb <- predict(SMO,test,type="probability")
 #COMPUTE BAYESIAN VOTE
 
 #TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-bayesianSum <- knnProb+treeProb+svmProb+nnProb+smoProb
+bayesianSum <- knnProb+treeProb+nnProb+smoProb
 
 idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
 
