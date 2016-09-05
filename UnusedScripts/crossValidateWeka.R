@@ -47,7 +47,7 @@ print(results)
 #lines(10:length(datasets$train_s),results[,1])
 #lines(10:length(datasets$train_s),results[,2])
 
-jpeg("~/Documents/momonografia/imagens/J48Validacaopredio1andar0.jpeg", width = 4.5, height = 4, units = 'in', res = 300)
+jpeg("~/Documents/momonografia/imagens/J48xADAValidacaopredio1andar0.jpeg", width = 2000, height = 1700, units = 'px', res = 300)
 
 
 x <- seq(10,nrow(datasets$train_s),1)
@@ -55,16 +55,19 @@ x <- seq(10,nrow(datasets$train_s),1)
 data <- results[,1]
 
 #model as n degree polynomial
-model <- lm(data~poly(x,3))
+model <- lm(data~poly(x,5))
+
+
+
 
 plot(x=x,results[,1]*100,pch="o",col=alpha("green2", 0.3),ylab = "Erro de Classificação (%)",xlab="# de pontos de treino",main="Erro de Validação para J48 (C4.5)\n com e sem o algoritmo AdaBoost")
 library(scales)
 #plot scatter and tendence line
 lines(x,y=100*predict(model,data.frame(x=x)),type='l',col="green3")
 lines(resultsAda*100,type="p",col=alpha("purple", 0.3),pch="x")
-modelAda <- lm(resultsAda~poly(x,3))
+modelAda <- lm(resultsAda~poly(x,5))
 lines(x,y=100*predict(modelAda,data.frame(x=x)),type='l',col="purple3")
-legend("topright",fill=c("green", "purple" ) , legend = c("Sem Algoritmo","Com Algoritmo"))
+legend("topright",fill=c("green", "purple" ) , legend = c("Sem AdaBoost","Com AdaBoost"))
 
 
 dev.off()

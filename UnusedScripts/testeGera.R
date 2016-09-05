@@ -1,6 +1,8 @@
 
 
-path <- "~/Documents/machinelearning_R/datasets"
+#path <- "~/Documents/machinelearning_R/datasets"
+path <- "raw-data"
+
 datasets <- prepareUCIdata2(path,1,2)
 #justInside = TRUE
 #datasets <- prepareUCIdata2(path,1,0)
@@ -18,7 +20,6 @@ test    <- dplyr::select(datasets$test_s,-idZ)
 #
 tree <- J48(idZ~.,data=train)
 treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
-
 
 #TRAIN NEURAL NET
 #
@@ -71,6 +72,7 @@ SVM <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
 #
 #
 SMO <- SMO(idZ~.,data=train)
+
 
 
 

@@ -1,75 +1,52 @@
 
-zones <- c(101, 102 ,103 ,104, 105, 106, 107, 108, 109, 110, 111, 112,113,114,115,116,117,118,119,120,121)
-bigResults <- NULL
-allResults <- NULL
-evenBiggerResults <- NULL
 
-for (nTests in 1:20){
-  for ( zNumber in 3:length(zones)) {
-    
-    
-    
-      datasets <-prepareUCIdata(path,sample(zones, zNumber, replace = FALSE, prob = NULL))
-    
-      trainedModels <- trainModels(datasets$train_s,datasets$train_pca)
-    
+
+#so pra pegar as zonas
+datasets<-prepareUCIdata2(path,0,1)
+zones <- zonas
+
+
+#perform tests on random subsets of a increasing number of zones
+
+results <- NULL
+for ( zNumber in 3:length(zones)) {
   
-      simpleVote <- singleTestMatrix(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree)
-      weightedVote <- MatrixTestBayesianVote(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$Tree,datasets$train_s)
-
-      NN <-  singleTestNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
-      SVM <- singleTestSVM(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
-      KNN <- singleTestKNN(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
-      Tree <-  singleTestTree(dplyr::select(datasets$test_s,-idZ),trainedModels$NeuralNet,trainedModels$SVM,trainedModels$KNN,trainedModels$Tree) 
-      correct <- as.numeric(dplyr::select(datasets$test_s,idZ)[[1]])
-      factors<- trainedModels$NeuralNet$model.list$response
-      factors <- gsub("`",'',factors)
-      correct <- as.numeric(factors[correct])
-      
-
-      
-      
-      allResults <- rbind(allResults,cbind(simpleVote,NN,SVM,KNN,Tree,correct,weightedVote))
-      
-    
-   
-    
-    rateVote <- mean(allResults[,1]==allResults[,6])
-    rateNN <- mean(allResults[,2]==allResults[,6])
-    rateSVM <- mean(allResults[,3]==allResults[,6])
-    rateKNN <- mean(allResults[,4]==allResults[,6])
-    rateTree <- mean(allResults[,5]==allResults[,6])
-    rateWeight <- mean(allResults[,7]==allResults[,6])
-    
-    bigResults <- rbind(bigResults,c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree,zNumber))
-    print( c(rateVote,rateWeight,rateNN,rateSVM,rateKNN,rateTree,zNumber))
-    allResults <- NULL
-    
-    
-  }
-
-  evenBiggerResults <- rbind(evenBiggerResults,bigResults)
-  bigResults <- NULL
-}
-
-
-
-
-resultFrame <- as.data.frame(evenBiggerResults)
-
-
-saveRDS(resultFrame,"resultFrame.rds")
-
-#get means for each zone
-for (i in 3:12){
+  datasets <-prepareUCIdata2(path,0,1,sample(zones, zNumber, replace = FALSE, prob = NULL))
   
-  zoneResults <- filter(resultFrame,V6==i)
+  models  <-trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
   
+  rates   <-allTests(datasets$train_s,datasets$test_s,models$NeuralNet,models$SMO,models$Tree,models$TreeAda)
   
-  print(c(i,apply(zoneResults[,-6],2,mean)))
+  results <- rbind(results,rates) 
   
 }
 
 
+par(mfrow=c(2,2))
 
+x<-seq(3,length(zones))
+
+
+plot(unlist(results[,1]),main="Rede Neural",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
+model <- lm(unlist(results[,1])~poly(x,3))
+lines(x,y=predict(model,data.frame(x=x)),type='l',col="green3")
+
+plot(unlist(results[,4]),main="SMO",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
+model <- lm(unlist(results[,4])~poly(x,3))
+lines(x,y=predict(model,data.frame(x=x)),type='l',col="green3")
+
+plot(unlist(results[,5]),main="KNN",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
+model <- lm(unlist(results[,5])~poly(x,3))
+lines(x,y=predict(model,data.frame(x=x)),type='l',col="green3")
+
+plot(unlist(results[,6]),main="J48",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
+model <- lm(unlist(results[,6])~poly(x,3))
+lines(x,y=predict(model,data.frame(x=x)),type='l',col="green3")
+
+
+
+par(mfrow=c(2,1))
+
+plot(unlist(results[,2]),main="Voto Simples",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
+plot(unlist(results[,3]),main="Voto com Peso",xlab = "# de Zonas",ylab = "Erro de Classificação (%)")
 

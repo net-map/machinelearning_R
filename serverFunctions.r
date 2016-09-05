@@ -33,6 +33,11 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
   else if (is.null(zones) && justInside==TRUE){fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,RELATIVEPOSITION ==1)}
   
   
+  zonas <- unique(fdataset$SPACEID)
+  
+  assign("zonas",zonas,.GlobalEnv)
+  
+  
   names(fdataset)[525] <- "idZ"
   tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
   tidyData$idZ <- as.factor(tidyData$idZ)
@@ -270,6 +275,9 @@ trainModels <- function(train,trainPCA,test){
   
   tree <- J48(idZ~.,data=train)
   
+  treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
+  
+  
   
   #serialize java object object
   rJava::.jcache(tree$classifier)
@@ -318,60 +326,102 @@ trainModels <- function(train,trainPCA,test){
   
   #SUPPORT VECTOR MACHINE
   
-  #We must separate data into X matrix for the features and Y for the response vector with the classes
-  #suppressWarnings(attach(train_s))
-  #detach(train_s)
-  #xi<- dplyr::select(train,-idZ)
-  #yi <- train$idZ
   
   
-  kernelType <- "radial" 
-  #mylogit1 <-svm(x=xi,y=yi,kernel = kernelType,scale=FALSE,probability = TRUE)
-  
-  TESTE <- train
-  assign("TESTE",train,.GlobalEnv)
-  
-  mylogit1 <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
-  assign("SVM",mylogit1,.GlobalEnv)
-  #saveRDS(mylogit1,"SVM.rds")
+  SMO <- SMO(idZ~.,data=train)  
+  assign("SMO",SMO,.GlobalEnv)
+
   
   
-  
-  #
-  #
-  #K NEAREST NEIGHBOURS
-  #
-  #
-  
-  #knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
-  #knnTrain<-kknn(formula = idZ ~. , k=3,scale=FALSE,kernel = "optimal",distance=1, train=train,test=test)
-  
-  #assign("KNN",knnTrain,.GlobalEnv)
-  #saveRDS(knnTrain,"KNN.rds")
-  
-  
-  
-  modelList <- list("NeuralNet" = nn,"SVM" = mylogit1,"Tree" = tree)
+  modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = tree,"TreeAda"=treeAda)
   
   return (modelList)
 
 }
 
 
-#Use trained models to provide a single classification answer from testVector
-#REMOVE ZONE ID FROM VECTOR
-#
-#WEIGHTED BAYESIAN VOTE
 #
 #
-#RSSID1 RSSID2 RSSID3 ... 
-# -30     -39    -29         
+#Perform all tests on test dataset , return all classification ERROR rates
+#
+#test HAS to include correct idZ    
 #
 #
 #
-singleTestBayesianVote <- function (testVector,NNmodel,SVMmodel,TreeModel,train){
+allTests <- function (train,test,NNmodel,SMOmodel,TreeModel,AdaTreeModel){
   
-  #TO DO
+  factors<- NNmodel$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  idZ <- dplyr::select(test,idZ)
+  test<- dplyr::select(test,-idZ)
+  
+  
+
+  #NEURALNET PREDICTION
+  nnProb<-neuralnet::compute(NNmodel,test)$net.result
+  nnPrediction <-apply(nnProb,1,function(x) which.max(x))
+  #get idz computed
+  idZNN <- as.numeric(as.character(factors[nnPrediction]))  
+  
+  
+  #SMO PREDICTION
+  idZSMO <- predict(SMOmodel,test)
+  smoProb <- predict(SMOmodel,test,type="probability")
+  
+  
+  
+  #DECISION TREE PREDICTION
+  predictionTree <- predict(TreeModel,test,type="probability")
+  idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
+  treeProb <-  predictionTree
+  
+  #DECISION TREE PREDICTION
+  predictionTreeAda <- predict(TreeModelAda,test,type="probability")
+  idZtreeAda <-  as.numeric(as.character(factors[apply (predictionTreeAda,1,function(x) which.max(x))]))
+  treeAdaProb <-  predictionTree
+  
+  
+  
+  
+  #KNN PREDICTION
+  knnTrain<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=test,kernel="optimal")
+  knnProb <- knnTrain$prob
+  knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+  idZKNN <- knnPrediction
+  
+  #correct prediction
+  correct <- as.numeric(idZ[[1]])
+  testIDZ <- as.numeric(factors[correct])
+  
+  
+  sumProb <-  knnProb + nnProb +smoProb +treeProb
+  #get class with maximum summed probability
+  idZBayas <-  as.numeric(as.character(factors[apply (sumProb,1,function(x) which.max(x))]))
+  
+
+  results <- cbind(idZKNN,idZSMO,idZNN,idZtree)
+  
+  #get most recurring result
+  idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
+  
+  
+  
+  #COMPUTE CLASSIFICATION ~ERROR~ RATES
+  
+  rateNN <- 1- mean(idZNN==testIDZ)
+  rateKNN <- 1- mean(idZKNN==testIDZ)
+  rateTree <- 1- mean(idZtree==testIDZ)
+  rateSMO <- 1- mean(idZSMO==testIDZ)
+  
+  rateVote <- 1-mean(idZVote==testIDZ)
+  rateBayas <- 1-mean(idZBayas==testIDZ)
+  
+  
+  
+  return(list("NN"=rateNN,"Simple Vote"=rateNN,"Weight Vote"=rateBayas,"SMO"=rateSMO,"KNN"=rateKNN,"J48"=rateTree))
+  
+  
   
 }
 
@@ -409,18 +459,16 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   
   
   #SVM PREDICTION
-  #svmPrediction <- as.numeric(predict(SVMmodel,test))
-  
 
-  svmProb <- attr(predict(SVMmodel,test,probability=TRUE),"probabilities")  
-  
+
+  smoProb <- predict(SMO,test,type="probability")  
 
   #get idz computed
   #idZSVM <- as.numeric(as.character(factors[svmPrediction]))
   
   
   #KNN PREDICTION
-  knnTrain<-kknn(formula=idZ ~. , k=7,distance=1, train=train,test=test,kernel="optimal")
+  knnTrain<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=test,kernel="optimal")
   knnProb <- knnTrain$prob
   knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
   knnPrediction <- factors[knnPrediction]
@@ -435,7 +483,7 @@ MatrixTestBayesianVote <- function (test,NNmodel,SVMmodel,TreeModel,train){
   #+treeProb
 
   
-  sumProb <-  knnProb + nnProb +svmProb +treeProb
+  sumProb <-  knnProb + nnProb +smoProb +treeProb
   #get class with maximum summed probability
   idZWeightedProb <-  as.numeric(as.character(factors[apply (sumProb,1,function(x) which.max(x))]))
   
@@ -497,7 +545,9 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   
   #SVM PREDICTION
-  svmPrediction <- as.numeric(predict(SVMmodel,testVector))
+
+  idZSMO <- predict(SMO,test)
+
   
   #get idz computed
   idZSVM <- factors[svmPrediction]
@@ -515,13 +565,7 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
   idZtree <-  factors[apply (predictionTree,1,function(x) which.max(x))]
   
-  
-  
-  
-  
-  
-  
-  results <- cbind(idZKNN,idZSVM,idZNN,idZtree)
+  results <- cbind(idZKNN,idZSMO,idZNN,idZtree)
   
   
   #get most recurring result
@@ -652,8 +696,7 @@ singleTestMatrix <- function (test,NNmodel,SVMmodel,Treemodel,train){
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
   
-  
-  
+
   
   #NEURALNET PREDICTION
   nnPrediction <-apply(neuralnet::compute(NNmodel,test)$net.result,1,function(x) which.max(x))

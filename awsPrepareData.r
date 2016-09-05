@@ -78,7 +78,7 @@ if(mongo.is.connected(mongo) == TRUE) {
   molten$variable <- NULL
   
   #gambiarra
-  molten <- molten[-14,]
+  #molten <- molten[-14,]
   
   attach(rawDataDF)
   tidyData <- reshape2::dcast(molten,   acquiID+ idZ  ~ BSSID, value.var = 'RSSI')
