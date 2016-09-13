@@ -1,8 +1,8 @@
 
 
-#path <- "~/Documents/machinelearning_R/datasets"
-path <- "raw-data"
-zones<-zonas
+path <- "~/Documents/machinelearning_R/datasets"
+#path <- "raw-data"
+#zones<-zonas
 #sample(zonas, 15, replace = FALSE, prob = NULL)
 datasets <- prepareUCIdata2(path,1,2)
 #justInside = TRUE
@@ -147,10 +147,31 @@ smoProb <- predict(SMO,test,type="probability")
 
 #COMPUTE BAYESIAN VOTE
 
-#TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-bayesianSum <- knnProb+smoProb+treeProbAda
+#TRY WITH DIFFERENT METHODS FOR THE VOTING WITH SUPPORT VALUES (probabilities) FROM MODELS
 
-idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
+#WEIGHTED VOTING
+weights <- c(4,2,3)
+bayesianSum <- (knnProb*weights[1]+smoProb*weights[2]+treeProbAda*weights[3])/total
+idZBayas <- as.numeric(factors[apply (bayesianSum,1,function(x) which.max(x))])
+rateBayas <- 1-mean(idZBayas==testIDZ)
+print(rateBayas)
+
+#MAXIMUM RULE
+#Maximum rule As the name suggests, this rule selects 
+#the maximum of all the supports of the different classifiers for a particular class.
+
+
+knn<-paste(as.character(apply(knnProb,1,function(x) which.max(x))),apply(knnProb,1,function(x) max(x)))
+
+adaTree <-paste(as.character(apply(treeProbAda,1,function(x) which.max(x))),apply(treeProbAda,1,function(x) max(x)))
+
+smo<-paste(as.character(apply(smoProb,1,function(x) which.max(x))),apply(smoProb,1,function(x) max(x)))
+
+
+
+
+
+
 
 
 #COMPUTE SIMPLE VOTE
@@ -170,9 +191,9 @@ library("ipred")
 
 
 #USE RANDOM FOREST TO MAKE PREDICTION WITH ENSEMBLE LEARNING
-combModFit <- train(trainIDZ ~.,method="rpart",data=predDFTrain)
+combModFit <- rpart(trainIDZ ~.,method="class",data=predDFTrain,method="class")
 #lr2 <- glm(trainIDZ~., family=binomial, data=predDFTrain)
-teste <- bagging(trainIDZ ~.,data=predDFTrain)
+#teste <- bagging(trainIDZ ~.,data=predDFTrain)
 
 randomForestPred <- predict(combModFit,newdata=predDFTest)
 
