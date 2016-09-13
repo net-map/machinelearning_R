@@ -10,8 +10,10 @@ datasets <- prepareUCIdata2(path,1,2)
 
 train <- datasets$train_s
 testIDZ <- datasets$test_s$idZ
+trainIDZ <- datasets$train_s$idZ
 test    <- dplyr::select(datasets$test_s,-idZ)
-
+#train dataset without idZ
+trainT <- dplyr::select(datasets$train_s,-idZ)
 
 #TRAIN TREE
 #
@@ -84,10 +86,15 @@ factors <- gsub("`",'',factors)
 
 
 #KNN PREDICTION
-knnTrain<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=test,kernel="optimal")
-knnProb <- knnTrain$prob
-knnPrediction <- as.numeric(as.character(knnTrain$fitted.values))
+knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=test,kernel="optimal")
+knnModelTrain<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=trainT,kernel="optimal")
+
+knnProb <- knnModel$prob
+knnPrediction <- as.numeric(as.character(knnModel$fitted.values))
 idZKNN <- knnPrediction
+
+#results on training set for KNN
+idZKNNt <-knnModelTrain$fitted.values
 
 
 #DECISION TREE PREDICTION
@@ -95,11 +102,18 @@ predictionTree <- predict(tree,test,type="probability")
 idZtree <-  as.numeric(as.character(factors[apply (predictionTree,1,function(x) which.max(x))]))
 treeProb <-  predictionTree
 
+
+
 #ADABOOST PREDICTION
+#on test set
 predictionTreeAda <- predict(treeAda,test,type="probability")
 idZtreeAda <-  as.numeric(as.character(factors[apply (predictionTreeAda,1,function(x) which.max(x))]))
 treeProbAda <-  predictionTreeAda
 
+#on train set
+predictionTreeAdat <- predict(treeAda,trainT,type="probability")
+
+idZtreeAdat<-  as.factor(factors[apply (predictionTreeAdat,1,function(x) which.max(x))])
 
 
 
@@ -114,11 +128,19 @@ idZSVM <- predict(SVM,test)
 nnProb<-neuralnet::compute(nn,test)$net.result
 nnPrediction <-apply(nnProb,1,function(x) which.max(x))
 idZNN <- as.numeric(as.character(factors[nnPrediction]))
+#on train set
+nnProbt<-neuralnet::compute(nn,trainT)$net.result
+nnPredictiont <-apply(nnProbt,1,function(x) which.max(x))
+idZNNt <- as.factor(factors[nnPredictiont])
+
+
 
 
 #SMO PREDICTION
 
 idZSMO <- predict(SMO,test)
+idZSMOt <- predict(SMO,trainT)
+
 smoProb <- predict(SMO,test,type="probability")
 
 
@@ -139,47 +161,22 @@ results <- cbind(idZKNN,idZSMO,idZtreeAda)
 idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
 
 
+#CREATE DF WITH TRAIN AND TEST PREDICTIONS FROM ALL PREDICTORS
+predDFTrain <- data.frame(trainIDZ,idZKNNt,idZNNt,idZSMOt,idZtreeAdat)
+#changing names so predict method can know 
+predDFTest <- data.frame("idZKNNt"=as.factor(idZKNN),"idZNNt"=as.factor(idZNN),"idZSMOt"=as.factor(idZSMO),"idZtreeAdat"=as.factor(idZtreeAda))
 
-#linear regression layer to make prediction
-library(VGAM)
-library(caretEnsemble)
-#CREATE DF WITH PREDICTIONS FROM ALL PREDICTORS
+library("ipred")
 
-idZKNNf <- as.factor(idZKNN) 
-idZNNf <- as.factor(idZNN)
-idZtreeAdaf <- as.factor(idZtreeAda)
-
-
-predDF <- data.frame(testIDZ,idZKNNf,idZNNf,idZSMO,idZtreeAdaf)
-
-#get some of the ensemble DF to train ensemble model, the remaining to test
-indexTrain <- sample(nrow(predDF), .9*nrow(predDF))
 
 #USE RANDOM FOREST TO MAKE PREDICTION WITH ENSEMBLE LEARNING
-combModFit <- train(testIDZ ~.,method="rf",data=predDF[indexTrain,])
+combModFit <- train(trainIDZ ~.,method="rpart",data=predDFTrain)
+#lr2 <- glm(trainIDZ~., family=binomial, data=predDFTrain)
+teste <- bagging(trainIDZ ~.,data=predDFTrain)
 
+randomForestPred <- predict(combModFit,newdata=predDFTest)
 
-randomForestPred <- predict(combModFit,predDF[-indexTrain,])
-
-rateRandomForest <- 1-mean(randomForestPred==testIDZ[-indexTrain])
-#lr2 <- glm(testIDZ~., family=binomial(link='logit'), data=predDF)
-
-
-#USING NEURAL NET AS ENSEMBLE LAYER TO DECIDE BEETWEN OTHER MODELS
-
-#n <- names(predDF)
-#f <- as.formula(paste("testIDZ ~", paste(n[!n %in% "testIDZ"], collapse = " + ")))
-
-#nnData <- apply(predDF,2,function(x) nnet::class.ind(x))
-
-#nnData <- apply(predDF,2,function(x) as.numeric(x))
-
-#nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
-
-#nnProb<-neuralnet::compute(nn,nnData)
-
-
-
+rateRandomForest <- 1-mean(randomForestPred==testIDZ)
 
 
 
