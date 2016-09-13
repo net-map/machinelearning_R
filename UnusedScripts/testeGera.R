@@ -2,7 +2,8 @@
 
 #path <- "~/Documents/machinelearning_R/datasets"
 path <- "raw-data"
-
+zones<-zonas
+#sample(zonas, 15, replace = FALSE, prob = NULL)
 datasets <- prepareUCIdata2(path,1,2)
 #justInside = TRUE
 #datasets <- prepareUCIdata2(path,1,0)
@@ -125,7 +126,7 @@ smoProb <- predict(SMO,test,type="probability")
 #COMPUTE BAYESIAN VOTE
 
 #TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-bayesianSum <- knnProb+nnProb+smoProb+treeProbAda
+bayesianSum <- knnProb+smoProb+treeProbAda
 
 idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
 
@@ -133,9 +134,51 @@ idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) whi
 #COMPUTE SIMPLE VOTE
 
 #TRY WITH DIFFERENT COMBINATIONS OF PREDICTIONS
-results <- cbind(idZKNN,idZNN,idZSMO,idZtreeAda)
+results <- cbind(idZKNN,idZSMO,idZtreeAda)
 
 idZVote <- apply(results,1,function (x) as.numeric(names(sort(table(x),decreasing = TRUE)[1])))
+
+
+
+#linear regression layer to make prediction
+library(VGAM)
+library(caretEnsemble)
+#CREATE DF WITH PREDICTIONS FROM ALL PREDICTORS
+
+idZKNNf <- as.factor(idZKNN) 
+idZNNf <- as.factor(idZNN)
+idZtreeAdaf <- as.factor(idZtreeAda)
+
+
+predDF <- data.frame(testIDZ,idZKNNf,idZNNf,idZSMO,idZtreeAdaf)
+
+#get some of the ensemble DF to train ensemble model, the remaining to test
+indexTrain <- sample(nrow(predDF), .9*nrow(predDF))
+
+#USE RANDOM FOREST TO MAKE PREDICTION WITH ENSEMBLE LEARNING
+combModFit <- train(testIDZ ~.,method="rf",data=predDF[indexTrain,])
+
+
+randomForestPred <- predict(combModFit,predDF[-indexTrain,])
+
+rateRandomForest <- 1-mean(randomForestPred==testIDZ[-indexTrain])
+#lr2 <- glm(testIDZ~., family=binomial(link='logit'), data=predDF)
+
+
+#USING NEURAL NET AS ENSEMBLE LAYER TO DECIDE BEETWEN OTHER MODELS
+
+#n <- names(predDF)
+#f <- as.formula(paste("testIDZ ~", paste(n[!n %in% "testIDZ"], collapse = " + ")))
+
+#nnData <- apply(predDF,2,function(x) nnet::class.ind(x))
+
+#nnData <- apply(predDF,2,function(x) as.numeric(x))
+
+#nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
+
+#nnProb<-neuralnet::compute(nn,nnData)
+
+
 
 
 
@@ -152,6 +195,7 @@ rateSMO <- 1- mean(idZSMO==testIDZ)
 
 rateVote <- 1-mean(idZVote==testIDZ)
 rateBayas <- 1-mean(idZBayas==testIDZ)
+rateRandomForest <- 1-mean(randomForestPred==testIDZ)
 
 
 cat("ERROS PARA TESTE ","\n")
@@ -164,6 +208,7 @@ cat("Erro de J48 + ADA",rateTreeAda,"\n")
 cat("Erro de NN",rateNN,"\n")
 cat("Erro de Voto Simples",rateVote,"\n")
 cat("Erro de Voto com Peso",rateBayas,"\n")
+cat("Erro de RF",rateRandomForest,"\n")
 
 
 

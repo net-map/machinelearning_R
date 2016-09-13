@@ -348,7 +348,7 @@ trainModels <- function(train,trainPCA,test){
 #
 #
 #
-allTests <- function (train,test,NNmodel,SMOmodel,TreeModel,AdaTreeModel){
+allTests <- function (train,test,NNmodel,SMOmodel,TreeModel,TreeModelAda){
   
   factors<- NNmodel$model.list$response
   factors <- gsub("`",'',factors)
@@ -379,7 +379,7 @@ allTests <- function (train,test,NNmodel,SMOmodel,TreeModel,AdaTreeModel){
   #DECISION TREE PREDICTION
   predictionTreeAda <- predict(TreeModelAda,test,type="probability")
   idZtreeAda <-  as.numeric(as.character(factors[apply (predictionTreeAda,1,function(x) which.max(x))]))
-  treeAdaProb <-  predictionTree
+  treeAdaProb <-  predictionTreeAda
   
   
   
@@ -413,13 +413,13 @@ allTests <- function (train,test,NNmodel,SMOmodel,TreeModel,AdaTreeModel){
   rateKNN <- 1- mean(idZKNN==testIDZ)
   rateTree <- 1- mean(idZtree==testIDZ)
   rateSMO <- 1- mean(idZSMO==testIDZ)
-  
+  rateTreeAda <- 1 - mean(idZtreeAda==testIDZ)
   rateVote <- 1-mean(idZVote==testIDZ)
   rateBayas <- 1-mean(idZBayas==testIDZ)
   
   
   
-  return(list("NN"=rateNN,"Simple Vote"=rateNN,"Weight Vote"=rateBayas,"SMO"=rateSMO,"KNN"=rateKNN,"J48"=rateTree))
+  return(list("NN"=rateNN,"Simple Vote"=rateNN,"Weight Vote"=rateBayas,"SMO"=rateSMO,"KNN"=rateKNN,"J48"=rateTree,"Ada"=rateTreeAda))
   
   
   
