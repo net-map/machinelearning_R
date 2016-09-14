@@ -1,7 +1,7 @@
 
 
-path <- "~/Documents/machinelearning_R/datasets"
-#path <- "raw-data"
+#path <- "~/Documents/machinelearning_R/datasets"
+path <- "raw-data"
 #zones<-zonas
 #sample(zonas, 15, replace = FALSE, prob = NULL)
 datasets <- prepareUCIdata2(path,1,2)
@@ -160,6 +160,13 @@ print(rateBayas)
 #Maximum rule As the name suggests, this rule selects 
 #the maximum of all the supports of the different classifiers for a particular class.
 
+
+knn<-apply(knnProb,1,function(x) max(x))
+ada<-apply(treeProbAda,1,function(x) max(x))
+smo<-apply(smoProb,1,function(x) max(x))
+
+
+apply(c(knn,ada,smo),1,function(x) which.max(x))
 
 knn<-paste(as.character(apply(knnProb,1,function(x) which.max(x))),apply(knnProb,1,function(x) max(x)))
 
