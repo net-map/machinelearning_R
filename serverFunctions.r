@@ -1054,3 +1054,76 @@ package <- function(pkgs, install=TRUE, update=FALSE, quiet=TRUE, verbose=TRUE, 
     invisible(results)
   }
 }
+
+
+
+
+
+
+
+#wrapper for predict methods for ML models
+#return predictions as FACTORS or support matrix
+predictionWrapper<- function(model,test,probabilities=TRUE,...) {
+
+  
+if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call)){
+  
+  if(!probabilities){
+    pred <- predict(model,test)
+  }
+  else{
+  
+    pred <- predict(model,test,type="probability")  
+    
+  }
+    
+} else if(grepl("neuralnet",model$call,fixed = TRUE)){ 
+  
+  
+  factors<- model$model.list$response
+  factors <- gsub("`",'',factors)
+  
+  
+  nnProb<-neuralnet::compute(model,test)$net.result
+  
+  if(!probabilities){
+      
+      nnPrediction <-apply(nnProb,1,function(x) which.max(x))
+      pred <- as.factor(as.numeric(as.character(factors[nnPrediction])))
+      levels(pred)<-factors
+  }
+  else{
+    pred<-nnProb
+  }
+
+  
+} else if(grepl("kknn",model$call,fixed = TRUE)){
+  
+  if(!probabilities){
+    pred <- knnModel$fitted.values
+  }else{
+    pred <- knnModel$prob
+    
+  }
+  
+} else if(grepl("svm",model$call,fixed=TRUE)){
+  
+  if(!probabilities){
+    pred <- predict(model,test)
+  }else{
+  
+    pred <- attr(predict(model,test,probability=TRUE),"probabilities")  
+  
+  }
+  
+}
+
+  
+
+  
+  
+  
+  
+ return(pred) 
+  
+}
