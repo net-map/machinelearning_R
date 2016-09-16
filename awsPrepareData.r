@@ -98,7 +98,8 @@ if(mongo.is.connected(mongo) == TRUE) {
 
 
 dataPath <- "prepared-data"
-
+#remove Aquisition ID, as we don't really need it from now on
+tidyData<- tidyData[,-1]
 
 #datasets <- prepareUCIdata2(dataPath,args[1],args[2])
 
