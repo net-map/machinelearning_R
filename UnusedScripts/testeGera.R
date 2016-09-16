@@ -4,7 +4,7 @@
 path <- "raw-data"
 #zones<-zonas
 #sample(zonas, 15, replace = FALSE, prob = NULL)
-datasets <- prepareUCIdata2(path,1,2)
+datasets <- prepareUCIdata2(path,1,3)
 #justInside = TRUE
 #datasets <- prepareUCIdata2(path,1,0)
 
@@ -66,6 +66,8 @@ nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE)
 #
 SVM <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
 
+
+             
 
 #TRAIN SMO
 #
@@ -149,34 +151,60 @@ smoProb <- predict(SMO,test,type="probability")
 
 #TRY WITH DIFFERENT METHODS FOR THE VOTING WITH SUPPORT VALUES (probabilities) FROM MODELS
 
-#WEIGHTED VOTING
-weights <- c(4,2,3)
+#WEIGHTED VOTING RULE
+weights <- c(1,1,1)
+total <-sum(weights)
+total<-1
 bayesianSum <- (knnProb*weights[1]+smoProb*weights[2]+treeProbAda*weights[3])/total
 idZBayas <- as.numeric(factors[apply (bayesianSum,1,function(x) which.max(x))])
 rateBayas <- 1-mean(idZBayas==testIDZ)
+
 print(rateBayas)
+
+
+#PRODUCT RULE
+
+
+bayesianProd <- (knnProb*smoProb*treeProbAda)
+idZBayasProd <- as.numeric(factors[apply (bayesianProd,1,function(x) which.max(x))])
+rateBayasProd <- 1-mean(idZBayasProd==testIDZ)
+
+print(rateBayasProd)
+
 
 #MAXIMUM RULE
 #Maximum rule As the name suggests, this rule selects 
 #the maximum of all the supports of the different classifiers for a particular class.
 
-
-knn<-apply(knnProb,1,function(x) max(x))
-ada<-apply(treeProbAda,1,function(x) max(x))
-smo<-apply(smoProb,1,function(x) max(x))
-
-
-apply(c(knn,ada,smo),1,function(x) which.max(x))
-
-knn<-paste(as.character(apply(knnProb,1,function(x) which.max(x))),apply(knnProb,1,function(x) max(x)))
-
-adaTree <-paste(as.character(apply(treeProbAda,1,function(x) which.max(x))),apply(treeProbAda,1,function(x) max(x)))
-
-smo<-paste(as.character(apply(smoProb,1,function(x) which.max(x))),apply(smoProb,1,function(x) max(x)))
+#first get the maximum support as predicted by each model in each point
+knn<-as.vector(apply(knnProb,1,function(x) max(x)))
+ada<-as.vector(apply(treeProbAda,1,function(x) max(x)))
+smo<-as.vector(apply(smoProb,1,function(x) max(x)))
 
 
+max <- apply(cbind(knn,ada,smo),1,function(x) which.max(x))
 
 
+#then make a matrix with the class correspondent to the biggest support value
+knn2<-as.numeric(factors[apply(knnProb,1,function(x) which.max(x))])
+ada2<-as.numeric(factors[apply(treeProbAda,1,function(x) which.max(x))])
+smo2<-as.numeric(factors[apply(smoProb,1,function(x) which.max(x))])
+
+
+joined<-cbind(knn2,ada2,smo2)
+
+idZMaxRule <-NULL
+
+#sim, isso nao é vetorizado, NINGUEM TE PERGUNTOU!
+#create vector with just the class with the HIGHEST support among the models
+for(i in 1:nrow(joined)){
+  
+  idZMaxRule<-c(idZMaxRule,as.vector(joined[i,max[i]]))
+  
+}
+
+
+rateMaxRule <- 1-mean(idZMaxRule==testIDZ)
 
 
 
@@ -194,17 +222,17 @@ predDFTrain <- data.frame(trainIDZ,idZKNNt,idZNNt,idZSMOt,idZtreeAdat)
 #changing names so predict method can know 
 predDFTest <- data.frame("idZKNNt"=as.factor(idZKNN),"idZNNt"=as.factor(idZNN),"idZSMOt"=as.factor(idZSMO),"idZtreeAdat"=as.factor(idZtreeAda))
 
-library("ipred")
+#library("ipred")
 
 
 #USE RANDOM FOREST TO MAKE PREDICTION WITH ENSEMBLE LEARNING
-combModFit <- rpart(trainIDZ ~.,method="class",data=predDFTrain,method="class")
+#combModFit <- rpart(trainIDZ ~.,method="class",data=predDFTrain,method="class")
 #lr2 <- glm(trainIDZ~., family=binomial, data=predDFTrain)
 #teste <- bagging(trainIDZ ~.,data=predDFTrain)
 
-randomForestPred <- predict(combModFit,newdata=predDFTest)
+#randomForestPred <- predict(combModFit,newdata=predDFTest)
 
-rateRandomForest <- 1-mean(randomForestPred==testIDZ)
+#rateRandomForest <- 1-mean(randomForestPred==testIDZ)
 
 
 
@@ -220,7 +248,7 @@ rateSMO <- 1- mean(idZSMO==testIDZ)
 
 rateVote <- 1-mean(idZVote==testIDZ)
 rateBayas <- 1-mean(idZBayas==testIDZ)
-rateRandomForest <- 1-mean(randomForestPred==testIDZ)
+#rateRandomForest <- 1-mean(randomForestPred==testIDZ)
 
 
 cat("ERROS PARA TESTE ","\n")
@@ -233,7 +261,10 @@ cat("Erro de J48 + ADA",rateTreeAda,"\n")
 cat("Erro de NN",rateNN,"\n")
 cat("Erro de Voto Simples",rateVote,"\n")
 cat("Erro de Voto com Peso",rateBayas,"\n")
-cat("Erro de RF",rateRandomForest,"\n")
+cat("Erro de Voto Max Rule",rateMaxRule,"\n")
+
+#cat("Erro de RF",rateRandomForest,"\n")
+
 
 
 

@@ -263,25 +263,18 @@ prepareUCIdata <- function (path,listZones){
 #
 #
 #
-trainModels <- function(train,trainPCA,test){
+trainModels <- function(train){
   
   #DECISION TREE
 
   
-  tree <- J48(idZ~.,data=train)
+  #tree <- J48(idZ~.,data=train)
+  treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
   
   
   #serialize java object object
-  rJava::.jcache(tree$classifier)
+  rJava::.jcache(treeAda$classifier)
    
-  
-  #tree <- rpart(idZ~.,data=train,method="class")
-  #prune to avoid overfitting
-  #tree <-   prune(tree,tree$cptable[which.min(tree$cptable[,"xerror"]),"CP"])
-  
-  #assign("Tree",tree,.GlobalEnv)
-  #saveRDS(tree,"tree.rds")
-  
   
   
   #NEURALNETWORK
@@ -325,33 +318,21 @@ trainModels <- function(train,trainPCA,test){
   #yi <- train$idZ
   
   
-  kernelType <- "radial" 
-  #mylogit1 <-svm(x=xi,y=yi,kernel = kernelType,scale=FALSE,probability = TRUE)
+
   
-  TESTE <- train
-  assign("TESTE",train,.GlobalEnv)
+  SMO <- SMO(idZ~.,data=train)
+  assign("SMO",SMO,.GlobalEnv)
   
-  mylogit1 <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
-  assign("SVM",mylogit1,.GlobalEnv)
+  rJava::.jcache(SMO$classifier)
+  
   #saveRDS(mylogit1,"SVM.rds")
   
   
   
-  #
-  #
-  #K NEAREST NEIGHBOURS
-  #
-  #
-  
-  #knnTrain<-train.kknn(idZ ~. , kmax=3,scale=FALSE,kernel = c("rectangular", "triangular", "epanechnikov", "gaussian","rank", "optimal"),distance=1, data=train)
-  #knnTrain<-kknn(formula = idZ ~. , k=3,scale=FALSE,kernel = "optimal",distance=1, train=train,test=test)
-  
-  #assign("KNN",knnTrain,.GlobalEnv)
-  #saveRDS(knnTrain,"KNN.rds")
   
   
   
-  modelList <- list("NeuralNet" = nn,"SVM" = mylogit1,"Tree" = tree)
+  modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = treeAda)
   
   return (modelList)
 
@@ -532,7 +513,7 @@ singleTest <- function (testVector,NNmodel,SVMmodel,KNNmodel,Treemodel){
   
 }
 
-singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemodel){
+singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SMOmodel,Treemodel){
   
   
   
@@ -559,10 +540,6 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   #scale new data!
   testVector <- predict(scaleModel,testVector)
   
-
-  #compute projection of test vector into PCA data used by the Neural Network
-  #NOT USING THIS RIGHT NOW
-  #PCAvector <- predict(PCA,testVector)
   
   
   
@@ -606,7 +583,7 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   
   bayesianSum <- knnProb+treeProb+svmProb+nnProb
   
-  #get factor with more summed probability
+  #get factor with more summed support
   idZBayas <- as.numeric(as.character(factors[apply (bayesianSum,1,function(x) which.max(x))]))
   
   #get most recurring result
@@ -615,7 +592,7 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SVMmodel,Treemod
   
   
   #finally return calculated idZ
-  return (idZVote)
+  return (idZBayas)
   
 }
 
