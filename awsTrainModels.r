@@ -1,4 +1,4 @@
-
+setwd("../machinelearning_R")
 path<-paste(getwd(),"serverFunctions.r",sep="/")
 
 invisible(source(path))

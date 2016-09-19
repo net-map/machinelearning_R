@@ -1,5 +1,5 @@
 
-
+setwd("../machinelearning_R")
 path<-paste(getwd(),"serverFunctions.r",sep="/")
 
 invisible(source(path))
@@ -110,7 +110,20 @@ dataPath <- "prepared-data"
 #remove Aquisition ID, as we don't really need it from now on
 tidyData<- tidyData[,-1]
 
+#NON PCA SCALING
+preProc  <- caret::preProcess(tidyData)
+#saveRDS(preProc,"trainedModels/scale.rds")
+scaled <- predict(preProc, tidyData)
+assign("preProc",preProc,.GlobalEnv)
+
+
+
+
+
+#transform idZ into factor!
 tidyData[,1] <- as.factor(tidyData[,1])
+
+
 
 
 saveRDS(tidyData,paste(dataPath,"/",args,".rds",sep=""))
