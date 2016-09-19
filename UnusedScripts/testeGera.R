@@ -24,6 +24,22 @@ trainT <- dplyr::select(datasets$train_s,-idZ)
 tree <- J48(idZ~.,data=train)
 treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
 
+#seeds <- vector(mode = "list", length = nrow(train) + 1)
+#seeds <- lapply(seeds, function(x) 1:20)
+#
+#cctrl1 <- trainControl(method = "cv", number = 3, returnResamp = "all",
+#                       classProbs = TRUE, 
+#                       summaryFunction = twoClassSummary, 
+#                       seeds = seeds)
+#
+#treebagCaret <- train(trainT, trainIDZ, 
+#                             method = "treebag", 
+#                             trControl = cctrl1,
+#                             metric = "ROC", 
+#                             preProc = c("center", "scale"),
+#                             nbagg = 7)
+#
+
 #TRAIN NEURAL NET
 #
 #
@@ -67,7 +83,11 @@ nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE)
 SVM <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
 
 
-             
+  
+#KNN TRAIN
+knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=test,kernel="optimal")
+knnModelTrain<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=trainT,kernel="optimal")
+           
 
 #TRAIN SMO
 #
@@ -77,6 +97,17 @@ SVM <- svm(idZ~.,data=train,probability=TRUE,scale=FALSE)
 #
 #
 SMO <- SMO(idZ~.,data=train)
+
+
+listaModelos <- list("SMO"=SMO,"SVM"=SVM,"nn"=nn,"tree"=tree,"treeAda"=treeAda)
+i=0
+listPrediction <- NULL
+for (model in listaModelos){
+    #i<-i+1 
+   #print(names(listaModelos)[i])
+   predictionWrapper(model,test,probabilities=TRUE)
+}
+
 
 
 
