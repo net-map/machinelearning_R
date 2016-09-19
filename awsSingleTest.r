@@ -25,6 +25,7 @@ facilityName <- args[2]
 
 
 
+
 #getData
 dataVector <- jsonlite::fromJSON(dataPath)$access_points
 

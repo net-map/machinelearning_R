@@ -1,8 +1,5 @@
 
 
-
-
-
 library(rmongodb)
 library(ISLR)
 library(pracma)
@@ -538,6 +535,7 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SMOmodel,Treemod
   
   
   factors<- NNmodel$model.list$response
+  
   factors <- gsub("`",'',factors)
   
   
@@ -618,7 +616,31 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SMOmodel,Treemod
 
 
 
-
+singleTestAws <- function(testVector,names,train,modelsList){
+  
+  
+  #creates dummy vector with BSSIDs used to train the classifier
+  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  
+  #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
+  commomNames <- intersect(names,names(testVector))
+  #get values that are present in testVector
+  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  
+  testVector[is.na(testVector)] <- -120
+  
+  
+  #scale new data!
+  testVector <- predict(scaleModel,testVector)
+  
+  
+  
+  
+  
+  
+  
+  
+}
 
 
 

@@ -20,12 +20,28 @@ facilityName <- args[1]
 pathData <- paste("prepared-data/",facilityName,".rds",sep="")
 
 
-dataset <- readRDS(pathData)
+tidyData <- readRDS(pathData)
 
 
+#SCALE DATA
 
-trainedModels <- trainModels(dataset)
+idZ <- tidyData$idZ
 
+
+tidyData <- dplyr::select(tidyData,-idZ)
+
+
+#NON PCA SCALING
+preProc  <- caret::preProcess(tidyData)
+
+scaled <- predict(preProc, tidyData)
+
+
+#now, we train the models with data already scaled
+trainedModels <- trainModels(scaled)
+
+#save scaling object with models!
+trainedModels<- c(trainedModels,"preProc"=list(preProc))
 
 pathModels <- paste("trainedModels/",facilityName,".rds",sep="")
 
