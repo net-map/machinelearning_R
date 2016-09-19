@@ -1,4 +1,10 @@
 
+
+path<-paste(getwd(),"serverFunctions.r",sep="/")
+
+invisible(source(path))
+
+
 #recieve input facility name from command line
 args = commandArgs(trailingOnly=TRUE)
 #Rscript awsPrepareData.r facilityName 

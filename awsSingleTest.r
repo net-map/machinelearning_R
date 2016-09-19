@@ -1,10 +1,15 @@
 
-invisible(source("serverFunctions.r"))
+
+
+
+path<-paste(getwd(),"serverFunctions.r",sep="/")
+
+invisible(source(path))
 
 
 
 #recieve input data vector path from command line and facility name
-#Rscript (JSONurl | JSONPath) facilityName 
+#Rscript (JSONurl | JSONPath | JSONtext) facilityName 
 args = commandArgs(trailingOnly=TRUE)
 #default location and name
 if(length(args)==0){

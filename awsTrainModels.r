@@ -1,5 +1,8 @@
 
-source("serverFunctions.r")
+path<-paste(getwd(),"serverFunctions.r",sep="/")
+
+invisible(source(path))
+
 #recieve input facility name from command line
 #Rscript awsTrainModels.r facilityName 
 args = commandArgs(trailingOnly=TRUE)
