@@ -124,13 +124,13 @@ package <- function(pkgs, install=TRUE, update=FALSE, quiet=TRUE, verbose=TRUE, 
 
 
 #install and load required packages
-package(c("devtools","gridExtra","rpart","rJava","RWeka","ISLR","pracma","dplyr","jsonlite","reshape2","e1071","kknn","cluster","caret","nnet","neuralnet"))
+package(c("gridExtra","rpart","rJava","RWeka","ISLR","pracma","dplyr","jsonlite","reshape2","e1071","kknn","cluster","caret","nnet","neuralnet"))
 
-install_github("mongosoup/rmongodb")
+#install_github("mongosoup/rmongodb")
 
 
 
-library(rmongodb)
+#library(rmongodb)
 library(ISLR)
 library(pracma)
 library(dplyr)
