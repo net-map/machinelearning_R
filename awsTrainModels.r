@@ -1,19 +1,31 @@
 
 source("serverFunctions.r")
-#recieve input data path from command line
+#recieve input facility name from command line
+#Rscript awsTrainModels.r facilityName 
 args = commandArgs(trailingOnly=TRUE)
 #default location
 if(length(args)==0){
-  dataPath <- "prepared-data/UCIdata.rds"
+  #dataPath <- "prepared-data/UCIdata.rds"
+  facilityName <- "Brocolândia"
 }
 
 
-
-datasets <- readRDS(dataPath)
-
-
-trainedModels <- trainModels(datasets$train_s,datasets$train_pca,datasets$test_s)
+facilityName <- args[1]
 
 
-saveRDS(trainedModels,"trainedModels/UCImodels.rds")
+
+pathData <- paste("prepared-data/",facilityName,".rds",sep="")
+
+
+dataset <- readRDS(pathData)
+
+
+
+trainedModels <- trainModels(dataset)
+
+
+pathModels <- paste("trainedModels/",facilityName,".rds",sep="")
+
+
+saveRDS(trainedModels,pathModels)
 

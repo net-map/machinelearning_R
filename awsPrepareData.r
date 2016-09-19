@@ -1,12 +1,15 @@
 
 #recieve input facility name from command line
 args = commandArgs(trailingOnly=TRUE)
+#Rscript awsPrepareData.r facilityName 
 #default values
 if (length(args)==0){
   args <- "Brocolândia"
 }
 
 
+
+invisible(source("serverFunctions.r"))
 
 mongo <- mongo.create(host="52.67.105.105:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
 
@@ -101,7 +104,7 @@ dataPath <- "prepared-data"
 #remove Aquisition ID, as we don't really need it from now on
 tidyData<- tidyData[,-1]
 
-#datasets <- prepareUCIdata2(dataPath,args[1],args[2])
+tidyData[,1] <- as.factor(tidyData[,1])
 
 
 saveRDS(tidyData,paste(dataPath,"/",args,".rds",sep=""))
