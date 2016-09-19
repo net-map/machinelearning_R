@@ -11,6 +11,9 @@ invisible(source(path))
 #recieve input data vector path from command line and facility name
 #Rscript (JSONurl | JSONPath | JSONtext) facilityName 
 args = commandArgs(trailingOnly=TRUE)
+
+print(args)
+
 #default location and name
 if(length(args)==0){
   #dataPath <- "prepared-data/UCIdata.rds"
@@ -19,7 +22,10 @@ if(length(args)==0){
 }
 
 
+print(args[1])
+#addq <- function(x) paste0("`", x, "`")
 dataPath <- args[1]
+print(dataPath)
 facilityName <- args[2]
 
 
@@ -58,7 +64,7 @@ rJava::.jstrVal(trainedModels$SMO$classifier)
 
 
 
-preProc <- readRDS("trainedModels/scale.rds")
+
 
 
 
