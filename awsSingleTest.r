@@ -72,7 +72,7 @@ pathData <- paste("prepared-data/",facilityName,".rds",sep="")
 
 
 #get datasets so we can use the train set in the KNN prediction
-datasets <- readRDS(pathData)
+dataset <- readRDS(pathData)
 
 
 #names of features used for training
@@ -80,7 +80,7 @@ names <- names(datasets)[-1]
 
 
 
-
+singleTestAws(transposedData,names,dataset,trainedModels)
 
 
 #print(singleTest2(transposedData,datasets,preProc,trainedModels$NeuralNet,trainedModels$SMO,trainedModels$Tree) )
