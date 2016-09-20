@@ -1,6 +1,6 @@
 
 
-library(rmongodb)
+#library(rmongodb)
 library(ISLR)
 library(pracma)
 library(dplyr)
@@ -616,7 +616,13 @@ singleTest2 <- function (testVector,trainset,scaleModel,NNmodel,SMOmodel,Treemod
 
 
 
-singleTestAws <- function(testVector,names,train,modelsList){
+singleTestAws <- function(testVector,train,modelsList){
+  
+  #get possible idZs
+  factors <- levels(train$idZ)
+  
+  #names of features used for training
+  names <- names(train)[-1]
   
   
   #creates dummy vector with BSSIDs used to train the classifier
@@ -631,12 +637,38 @@ singleTestAws <- function(testVector,names,train,modelsList){
   
   
   #scale new data!
-  testVector <- predict(scaleModel,testVector)
+  testVector <- predict(modelsList$preProc,testVector)
+  
+  
+  #KNN TRAIN
+  knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=testVector,kernel="optimal")
+  
+  
+  
+  
+  listaModelos <- list("SMO"=modelsList$SMO,"KNN"=knnModel,"treeAda"=modelsList$Tree)
+  
+  #initialize summed support vector
+  sumProb <- vector(mode="numeric",length = length(factors))
+  
+  for (model in listaModelos){
+    
+    temp <- predictionWrapper(model,testVector,probabilities=TRUE)
+    
+    #WEIGHTED VOTING RULE
+    sumProb <- sumProb + temp
+    
+  }
+  
+  #results
+  idZBayas <- as.numeric(factors[which.max(sumProb)])
   
   
   
   
   
+  #return output zone_id
+  return (idZBayas)
   
   
   

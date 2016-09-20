@@ -75,12 +75,10 @@ pathData <- paste("prepared-data/",facilityName,".rds",sep="")
 dataset <- readRDS(pathData)
 
 
-#names of features used for training
-names <- names(datasets)[-1]
 
 
 
-singleTestAws(transposedData,names,dataset,trainedModels)
+singleTestAws(transposedData,dataset,trainedModels)
 
 
 #print(singleTest2(transposedData,datasets,preProc,trainedModels$NeuralNet,trainedModels$SMO,trainedModels$Tree) )
