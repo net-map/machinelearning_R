@@ -574,5 +574,6 @@ trainModels <- function(train){
 
 
 
+Rserve(debug=T)
+#run.Rserve(config.file = "/etc/Rserve.conf")
 
-run.Rserve(config.file = "/etc/Rserve.conf")
