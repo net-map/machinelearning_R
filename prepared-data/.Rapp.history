@@ -1,0 +1,2 @@
+load("/Users/thiagolira/Documents/netmap/prepared-data/UCIdata.rds")
+load("/Users/thiagolira/Documents/netmap/prepared-data/Brocolândia.rds")

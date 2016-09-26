@@ -1,6 +1,6 @@
 
 
-#library(rmongodb)
+invisible(library(rmongodb))
 invisible(library(ISLR))
 invisible(library(pracma))
 invisible(library(dplyr))
@@ -15,7 +15,7 @@ invisible(library(neuralnet))
 invisible(library(gridExtra))
 invisible(library(rpart))
 invisible(library(RWeka))
-
+invisible(library(Rserve))
 
 
 
@@ -138,95 +138,6 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
 
 
 
-#
-#
-#TRAIN MODELS WITH TRAIN SET IN FORMAT SPECIFIED IN ANOTHER FUNCTIONS
-#
-#
-#
-trainModels <- function(train){
-  
-  #DECISION TREE
-
-  
-  #tree <- J48(idZ~.,data=train)
-  treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
-  
-  
-  #serialize java object object
-  rJava::.jcache(treeAda$classifier)
-   
-  
-  
-  #NEURALNETWORK
-  
-  #transforms factors in binary dummy vectors
-  #ASSUMING IDZ IS IN COLUMN 1!!!!!!!!!
-  
-  usingNN=FALSE
-  
-  if(usingNN==TRUE){
-  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
-  
-  addq <- function(x) paste0("`", x, "`")
-  #adds `x` to every name in data
-  names(nnData) <- addq(names(nnData))
-  
-  n <- names(nnData)
-  #gets indexes of dummy id columns 
-  indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
-  
-  lhseq <- paste(names(nnData[,indexId]),collapse="+")
-  
-  rhseq <- paste(names(nnData[,-indexId]),collapse="+")
-  
-  #creates formula
-  f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
-  
-  #for some reason, remove quotes and it works
-  nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
-  
-  #TRAIN neuralnet!
-  
-  neuron <- 210
-  
-  nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
-  }
-  
-  #assign("NeuralNet",nn,.GlobalEnv)
-  #saveRDS(nn,"NeuralNet.rds")
-  
-  #SUPPORT VECTOR MACHINE
-  
-  #We must separate data into X matrix for the features and Y for the response vector with the classes
-  #suppressWarnings(attach(train_s))
-  #detach(train_s)
-  #xi<- dplyr::select(train,-idZ)
-  #yi <- train$idZ
-  
-  
-
-  
-  SMO <- SMO(idZ~.,data=train)
-  assign("SMO",SMO,.GlobalEnv)
-  
-  rJava::.jcache(SMO$classifier)
-  
-  #saveRDS(mylogit1,"SVM.rds")
-  
-  
-  
-  
-  
-  if(usingNN){
-  modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = treeAda)
-  }
-  else{
-    modelList <- list("SMO" = SMO,"Tree" = treeAda)
-  }
-  return (modelList)
-
-}
 
 
 #Use trained models to provide a single classification answer from testVector
@@ -240,7 +151,7 @@ trainModels <- function(train){
 #
 #
 #
-singleTestAws <- function(testVector,train,modelsList){
+prediction.from.models <- function(testVector,train,modelsList){
   
   #get possible idZs
   factors <- levels(train$idZ)
@@ -365,3 +276,303 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
  return(pred) 
   
 }
+
+
+#
+#
+#Input: facilityID
+#
+#
+#Output: Get dataset from mongo and prepare it for training
+#
+#
+aws.PrepareData <- function (facilityID){
+  
+  mongo <- mongo.create(host="52.67.105.105:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
+  
+  if (mongo.is.connected(mongo) == TRUE) {
+ 
+    
+    zones <- paste(db,"zones",sep = ".")
+    
+    
+    #retrive all zones from that facility
+    listZones <- mongo.find.all(mongo,zones,list(facility_id=facilityID))
+    
+    rawData <- NULL
+    
+    #for each zone found
+    for (z in 1:length(listZones)){
+      
+      #get ID of that zone from list of lists
+      zoneID <- listZones[[z]][[1]]
+      
+      acquisition <- paste(db,"acquisitions",sep = ".")
+      
+      listAcquisitions <- mongo.find.all(mongo,acquisition,list(zone_id=zoneID))
+      
+      lista <- NULL
+      
+      for (a in 1:length(listAcquisitions)){
+        listAP <- listAcquisitions[[a]]$access_points
+        acquiID <- listAcquisitions[[a]]$`_id`
+        #get relevant informantion from list
+        temp <- lapply(listAP,function(x) return (c(x$BSSID,x$RSSI)))
+        
+        #reshape list and add relevant IDs
+        temp2<- lapply(temp,montaLista,zoneID=zoneID,acquiID=acquiID)
+        
+        #create list in desirable format
+        
+        #unlist lists 
+        for (l in 1:length(temp2)){
+          lista <- rbind(lista,unlist(temp2[[l]]))
+        }
+        
+        
+        
+      }
+      
+      rawData <- rbind(rawData,lista)
+      
+    }
+    
+    
+    #we DONT want strings to be turned to factors!
+    rawDataDF<-data.frame(rawData,stringsAsFactors = FALSE)
+    
+    names(rawDataDF)<- c("BSSID","RSSI","idZ","acquiID")
+    
+    rawDataDF$RSSI <- as.numeric(rawDataDF$RSSI)
+    
+    
+    molten <- melt(rawDataDF,id.vars=c("idZ","acquiID","BSSID"), value.name = "RSSI",measure.vars = c("RSSI"))
+    
+    molten$variable <- NULL
+    
+    #gambiarra
+    #molten <- molten[-14,]
+    
+    attach(rawDataDF)
+    tidyData <- reshape2::dcast(molten,   acquiID+ idZ  ~ BSSID, value.var = 'RSSI')
+    detach(rawDataDF)
+    
+    
+  }else{
+    print("Could not connect to Mongo! DAMN IT LIRA")
+  }
+  
+  
+  
+  #convert to numbers
+  #zones <- as.numeric(args)
+  
+  #source("serverFunctions.r")
+  
+  
+  dataPath <- "prepared-data"
+  #remove Aquisition ID, as we don't really need it from now on
+  tidyData<- tidyData[,-1]
+  
+  
+  #transform idZ into factor!
+  tidyData[,1] <- as.factor(tidyData[,1])
+  
+  
+  #save file with facilityID as name
+  saveRDS(tidyData,paste(dataPath,"/",facilityID,".rds",sep=""))
+  
+}
+
+
+
+#
+#
+#
+#Input: json object with measures and facility from which the trained models will be used
+#
+#Output: ID of zone 
+#
+#
+aws.SingleTest <- function (jsonMeasure,facilityID){
+  #getData
+  dataVector <- jsonlite::fromJSON(jsonMeasure)$access_points
+  
+  
+  BSSIDlist <- dataVector$BSSID
+  RSSIlist <- dataVector$RSSI
+  
+  #row vector
+  transposedData <- matrix(nrow=1,ncol=length(BSSIDlist))
+  
+  transposedData <- data.frame(transposedData)
+  
+  
+  names(transposedData) <- BSSIDlist
+  
+  transposedData[1,] <- RSSIlist
+  
+  
+  print(transposedData)
+  
+  
+  pathModels <- paste("trainedModels/",facilityID,".rds",sep="")
+  
+  #get trained models
+  trainedModels <- readRDS(pathModels)
+  
+  #deserialize Java J48 and SMO objects
+  rJava::.jstrVal(trainedModels$Tree$classifier)
+  rJava::.jstrVal(trainedModels$SMO$classifier)
+  
+  
+  
+  
+  
+  
+  
+  pathData <- paste("prepared-data/",facilityID,".rds",sep="")
+  
+  
+  #get datasets so we can use the train set in the KNN prediction
+  dataset <- readRDS(pathData)
+  
+  
+  
+  
+  
+  return(prediction.from.models(transposedData,dataset,trainedModels))
+}
+
+
+
+aws.trainModels <- function (facilityID){
+  
+  
+  pathData <- paste("prepared-data/",facilityID,".rds",sep="")
+  
+  
+  tidyData <- readRDS(pathData)
+  
+  
+  #SCALE DATA
+  
+  idZ <- tidyData$idZ
+  
+  
+  tidyData <- dplyr::select(tidyData,-idZ)
+  
+  
+  #NON PCA SCALING
+  preProc  <- caret::preProcess(tidyData)
+  
+  scaled <- predict(preProc, tidyData)
+  
+  
+  #now, we train the models with data already scaled
+  trainedModels <- trainModels(scaled)
+  
+  #save scaling object with models!
+  trainedModels<- c(trainedModels,"preProc"=list(preProc))
+  
+  pathModels <- paste("trained-models/",facilityID,".rds",sep="")
+  
+  
+  saveRDS(trainedModels,pathModels)
+  
+  
+}
+#
+#
+#TRAIN MODELS WITH TRAIN SET IN FORMAT SPECIFIED IN ANOTHER FUNCTIONS
+#
+#
+#
+trainModels <- function(train){
+  
+  #DECISION TREE
+  
+  
+  #tree <- J48(idZ~.,data=train)
+  treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
+  
+  
+  #serialize java object object
+  rJava::.jcache(treeAda$classifier)
+  
+  
+  
+  #NEURALNETWORK
+  
+  #transforms factors in binary dummy vectors
+  #ASSUMING IDZ IS IN COLUMN 1!!!!!!!!!
+  
+  usingNN=FALSE
+  
+  if(usingNN==TRUE){
+    nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
+    
+    addq <- function(x) paste0("`", x, "`")
+    #adds `x` to every name in data
+    names(nnData) <- addq(names(nnData))
+    
+    n <- names(nnData)
+    #gets indexes of dummy id columns 
+    indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
+    
+    lhseq <- paste(names(nnData[,indexId]),collapse="+")
+    
+    rhseq <- paste(names(nnData[,-indexId]),collapse="+")
+    
+    #creates formula
+    f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
+    
+    #for some reason, remove quotes and it works
+    nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
+    
+    #TRAIN neuralnet!
+    
+    neuron <- 210
+    
+    nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
+  }
+  
+  #assign("NeuralNet",nn,.GlobalEnv)
+  #saveRDS(nn,"NeuralNet.rds")
+  
+  #SUPPORT VECTOR MACHINE
+  
+  #We must separate data into X matrix for the features and Y for the response vector with the classes
+  #suppressWarnings(attach(train_s))
+  #detach(train_s)
+  #xi<- dplyr::select(train,-idZ)
+  #yi <- train$idZ
+  
+  
+  
+  
+  SMO <- SMO(idZ~.,data=train)
+  assign("SMO",SMO,.GlobalEnv)
+  
+  rJava::.jcache(SMO$classifier)
+  
+  #saveRDS(mylogit1,"SVM.rds")
+  
+  
+  
+  
+  
+  if(usingNN){
+    modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = treeAda)
+  }
+  else{
+    modelList <- list("SMO" = SMO,"Tree" = treeAda)
+  }
+  return (modelList)
+  
+}
+
+
+
+
+run.Rserve()
