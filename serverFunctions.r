@@ -474,7 +474,7 @@ aws.trainModels <- function (facilityID){
   
   scaled <- predict(preProc, tidyData)
   
-  
+  print("Adriano viadao")
   #now, we train the models with data already scaled
   trainedModels <- trainModels(scaled)
   
