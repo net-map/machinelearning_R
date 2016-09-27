@@ -398,6 +398,8 @@ aws.PrepareData <- function (facilityID){
 #
 #
 aws.SingleTest <- function (jsonMeasure,facilityID){
+  
+  setwd("~/Documents/machinelearning_R")
   #getData
   dataVector <- jsonlite::fromJSON(jsonMeasure)$access_points
   
@@ -451,6 +453,7 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
 
 aws.trainModels <- function (facilityID){
   
+  setwd("~/Documents/machinelearning_R")
   
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
   
