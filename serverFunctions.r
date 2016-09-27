@@ -508,53 +508,7 @@ trainModels <- function(train){
   
   
   
-  #NEURALNETWORK
-  
-  #transforms factors in binary dummy vectors
-  #ASSUMING IDZ IS IN COLUMN 1!!!!!!!!!
-  
-  usingNN=FALSE
-  
-  if(usingNN==TRUE){
-    nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
-    
-    addq <- function(x) paste0("`", x, "`")
-    #adds `x` to every name in data
-    names(nnData) <- addq(names(nnData))
-    
-    n <- names(nnData)
-    #gets indexes of dummy id columns 
-    indexId <- grep("^[[:punct:]][[:digit:]]*[[:punct:]]$",n)
-    
-    lhseq <- paste(names(nnData[,indexId]),collapse="+")
-    
-    rhseq <- paste(names(nnData[,-indexId]),collapse="+")
-    
-    #creates formula
-    f<-as.formula(paste(lhseq,rhseq,sep = " ~ "))
-    
-    #for some reason, remove quotes and it works
-    nnData <- cbind(dplyr::select(train,-idZ),nnet::class.ind(train[,1]))
-    
-    #TRAIN neuralnet!
-    
-    neuron <- 210
-    
-    nn <- neuralnet::neuralnet(f,data=nnData,hidden=c(neuron),linear.output=FALSE) 
-  }
-  
-  #assign("NeuralNet",nn,.GlobalEnv)
-  #saveRDS(nn,"NeuralNet.rds")
-  
-  #SUPPORT VECTOR MACHINE
-  
-  #We must separate data into X matrix for the features and Y for the response vector with the classes
-  #suppressWarnings(attach(train_s))
-  #detach(train_s)
-  #xi<- dplyr::select(train,-idZ)
-  #yi <- train$idZ
-  
-  
+ 
   
   
   SMO <- SMO(idZ~.,data=train)
@@ -569,12 +523,9 @@ trainModels <- function(train){
   
   
   
-  if(usingNN){
-    modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = treeAda)
-  }
-  else{
-    modelList <- list("SMO" = SMO,"Tree" = treeAda)
-  }
+  
+  modelList <- list("SMO" = SMO,"Tree" = treeAda)
+  
   print("end function train models")
   return (modelList)
   
