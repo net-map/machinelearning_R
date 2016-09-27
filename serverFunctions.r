@@ -501,7 +501,7 @@ trainModels <- function(train){
   
   #tree <- J48(idZ~.,data=train)
   treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
-  
+  print("treinou arvore")
   
   #serialize java object object
   rJava::.jcache(treeAda$classifier)
@@ -558,6 +558,7 @@ trainModels <- function(train){
   
   
   SMO <- SMO(idZ~.,data=train)
+  print("treinou SMO")
   assign("SMO",SMO,.GlobalEnv)
   
   rJava::.jcache(SMO$classifier)
@@ -574,6 +575,7 @@ trainModels <- function(train){
   else{
     modelList <- list("SMO" = SMO,"Tree" = treeAda)
   }
+  print("end function train models")
   return (modelList)
   
 }
