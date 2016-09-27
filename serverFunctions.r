@@ -369,7 +369,7 @@ aws.PrepareData <- function (facilityID){
   #zones <- as.numeric(args)
   
   #source("serverFunctions.r")
-  
+  setwd("~/Documents/machinelearning_R")
   
   dataPath <- "prepared-data"
   #remove Aquisition ID, as we don't really need it from now on
