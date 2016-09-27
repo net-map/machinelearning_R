@@ -557,8 +557,8 @@ trainModels <- function(train){
   
   
   
-  #SMO <- SMO(idZ~.,data=train)
-  SMO <- "teste"
+  SMO <- SMO(idZ~.,data=train)
+  
   print("treinou SMO")
   assign("SMO",SMO,.GlobalEnv)
   
