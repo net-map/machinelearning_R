@@ -578,5 +578,5 @@ montaLista<- function(x,zoneID,acquiID){
 }
 
 #Rserve(debug=T,)
-run.Rserve(debug=T,config.file = "/etc/Rserve.conf")
+#run.Rserve(debug=T,config.file = "/etc/Rserve.conf")
 
