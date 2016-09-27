@@ -292,6 +292,7 @@ aws.PrepareData <- function (facilityID){
   
   if (mongo.is.connected(mongo) == TRUE) {
  
+    db <- "server_api_production"
     
     zones <- paste(db,"zones",sep = ".")
     
