@@ -379,7 +379,9 @@ aws.PrepareData <- function (facilityID){
   #transform idZ into factor!
   tidyData[,1] <- as.factor(tidyData[,1])
   
-  
+  print(getwd())
+  print (paste(dataPath,"/",facilityID,".rds",sep=""))                      
+                       
   #save file with facilityID as name
   saveRDS(tidyData,paste(dataPath,"/",facilityID,".rds",sep=""))
   
