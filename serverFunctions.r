@@ -573,7 +573,9 @@ trainModels <- function(train){
   
 }
 
-
+montaLista<- function(x,zoneID,acquiID){		
+  return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
+}
 
 #Rserve(debug=T,)
 run.Rserve(debug=T,config.file = "/etc/Rserve.conf")
