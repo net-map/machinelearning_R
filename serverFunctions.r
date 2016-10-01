@@ -369,7 +369,7 @@ aws.PrepareData <- function (facilityID){
   #zones <- as.numeric(args)
   
   #source("serverFunctions.r")
-  setwd("~/Documents/machinelearning_R")
+  #setwd("~/Documents/machinelearning_R")
   
   dataPath <- "prepared-data"
   #remove Aquisition ID, as we don't really need it from now on
@@ -399,10 +399,11 @@ aws.PrepareData <- function (facilityID){
 #
 aws.SingleTest <- function (jsonMeasure,facilityID){
   
-  setwd("~/Documents/machinelearning_R")
+  #setwd("~/Documents/machinelearning_R")
   #getData
   dataVector <- jsonlite::fromJSON(jsonMeasure)$access_points
   
+  print(dataVector)
   
   BSSIDlist <- dataVector$BSSID
   RSSIlist <- dataVector$RSSI
@@ -453,7 +454,7 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
 
 aws.trainModels <- function (facilityID){
   
-  setwd("~/Documents/machinelearning_R")
+  #setwd("~/Documents/machinelearning_R")
   
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
   
@@ -547,18 +548,11 @@ trainModels <- function(train){
   #saveRDS(nn,"NeuralNet.rds")
   
   #SUPPORT VECTOR MACHINE
-  
-  #We must separate data into X matrix for the features and Y for the response vector with the classes
-  #suppressWarnings(attach(train_s))
-  #detach(train_s)
-  #xi<- dplyr::select(train,-idZ)
-  #yi <- train$idZ
-  
-  
+ 
   
   
   SMO <- SMO(idZ~.,data=train)
-  
+  traceback()
   print("treinou SMO")
   assign("SMO",SMO,.GlobalEnv)
   
@@ -581,10 +575,11 @@ trainModels <- function(train){
   
 }
 
+#Function to be used as FUN argument in lapply
 montaLista<- function(x,zoneID,acquiID){		
   return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
 }
 
 #Rserve(debug=T,)
-run.Rserve(debug=T,config.file = "/etc/Rserve.conf")
+#Rserve (TRUE)
 
