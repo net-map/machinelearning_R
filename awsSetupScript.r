@@ -127,4 +127,6 @@ package(c("Rserve","devtools","gridExtra","rpart","rJava","RWeka","ISLR","pracma
 library(devtools)
 install_github("mongosoup/rmongodb")
 library(Rserve)
+#DEBUG MODE
+#Rserve(debug=TRUE,args = "--no-save")
 Rserve(args = "--no-save")
