@@ -288,7 +288,7 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
 #
 aws.PrepareData <- function (facilityID){
   
-  mongo <- mongo.create(host="52.67.105.105:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
+  mongo <- mongo.create(host="localhost:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
   
   if (mongo.is.connected(mongo) == TRUE) {
  
