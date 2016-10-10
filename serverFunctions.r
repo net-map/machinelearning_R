@@ -37,6 +37,9 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
   else if (is.null(zones) && justInside==TRUE){fdataset<-dplyr::filter(dataset,FLOOR==floor, BUILDINGID == building,RELATIVEPOSITION ==1)}
   
   
+  zonas <-  unique(fdataset$SPACEID)
+  assign("zonas",zonas,.GlobalEnv)
+  
   names(fdataset)[525] <- "idZ"
   tidyData <- dplyr::select(fdataset,WAP001:WAP520,idZ)
   tidyData$idZ <- as.factor(tidyData$idZ)
@@ -249,9 +252,9 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
 } else if(grepl("kknn",model$call,fixed = TRUE)){
   
   if(!probabilities){
-    pred <- knnModel$fitted.values
+    pred <- model$fitted.values
   }else{
-    pred <- knnModel$prob
+    pred <- model$prob
     
   }
   
@@ -401,7 +404,7 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
   
   #setwd("~/Documents/machinelearning_R")
   #getData
-  dataVector <- jsonlite::fromJSON(jsonMeasure)$access_points
+  dataVector <- jsonlite::fromJSON(jsonMeasure)$acquisition$access_points
   
   print(dataVector)
   
@@ -422,7 +425,7 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
   print(transposedData)
   
   
-  pathModels <- paste("trainedModels/",facilityID,".rds",sep="")
+  pathModels <- paste("trained-models/",facilityID,".rds",sep="")
   
   #get trained models
   trainedModels <- readRDS(pathModels)
@@ -430,10 +433,6 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
   #deserialize Java J48 and SMO objects
   rJava::.jstrVal(trainedModels$Tree$classifier)
   rJava::.jstrVal(trainedModels$SMO$classifier)
-  
-  
-  
-  
   
   
   
@@ -502,8 +501,7 @@ trainModels <- function(train){
   
   #tree <- J48(idZ~.,data=train)
   treeAda <- AdaBoostM1(idZ~. , data = train ,control = Weka_control(W = list(J48, M=5)))
-  print("treinou arvore")
-  
+
   #serialize java object object
   rJava::.jcache(treeAda$classifier)
   
@@ -552,8 +550,6 @@ trainModels <- function(train){
   
   
   SMO <- SMO(idZ~.,data=train)
-  traceback()
-  print("treinou SMO")
   assign("SMO",SMO,.GlobalEnv)
   
   rJava::.jcache(SMO$classifier)
@@ -570,7 +566,6 @@ trainModels <- function(train){
   else{
     modelList <- list("SMO" = SMO,"Tree" = treeAda)
   }
-  print("end function train models")
   return (modelList)
   
 }

@@ -119,6 +119,14 @@ package <- function(pkgs, install=TRUE, update=FALSE, quiet=TRUE, verbose=TRUE, 
 }
 
 
+#RUN THESE ON LINUX
+#
+#
+#sudo apt-get install libcurl4-openssl-dev
+#sudo apt-get install openjdk-7-*
+#sudo R CMD javareconf
+#sudo apt-get install r-cran-rjava
+#
 
 
 
