@@ -17,7 +17,7 @@ if (length(args)==0){
 
 invisible(source("serverFunctions.r"))
 
-mongo <- mongo.create(host="localhost:27017",username="net.map",password = "p4gic0tb9f2m2yj37iav")
+mongo <- mongo.create(host="localhost:27017",username="netmap",password = "p4gic0tb9f2m2yj37iav")
 
 if(mongo.is.connected(mongo) == TRUE) {
   db <- "server_api_production"
