@@ -4,9 +4,7 @@ library(rmongodb)
 library(ISLR)
 library(pracma)
 library(dplyr)
-print("Loaded dplyr")
 library(jsonlite)
-print("Loaded jsonlite")
 library(reshape2)
 library(e1071)
 library(kknn)
@@ -17,7 +15,7 @@ library(neuralnet)
 library(gridExtra)
 library(rpart)
 library(RWeka)
-
+print("loaded everything")
 
 
 
