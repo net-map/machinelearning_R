@@ -294,7 +294,7 @@ aws.PrepareData <- function (facilityID){
   #aws.PrepareData("580264eabde5c6211d18821b")
   print("Trying to connect to mongo...")
   
-  mongo <- mongo.create(host="ec2-52-67-171-39.sa-east-1.compute.amazonaws.com:27017",username="netmap",password = "brocoliéumvegetal")
+  mongo <- mongo.create(host="localhost:27017",username="netmap",password = "brocoliéumvegetal")
   
   if (mongo.is.connected(mongo) == TRUE) {
     
