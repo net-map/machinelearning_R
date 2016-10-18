@@ -137,7 +137,7 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
   
 }
 
-
+print("loaded uci prepare")
 
 
 
@@ -210,7 +210,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   
 }
-
+print("loaded prediction from models")
 
 #wrapper for predict methods for ML models
 #return predictions as FACTORS or support matrix
@@ -270,7 +270,7 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
 }
 
   
-
+  
   
   
   
@@ -279,6 +279,7 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
   
 }
 
+print("loaded wrapper")
 
 #
 #
@@ -395,7 +396,7 @@ aws.PrepareData <- function (facilityID){
 }
 
 
-
+print("loaded prepare data")
 #
 #
 #
@@ -453,7 +454,7 @@ aws.SingleTest <- function (jsonMeasure,facilityID){
   return(prediction.from.models(transposedData,dataset,trainedModels))
 }
 
-
+print("loaded single test")
 
 aws.trainModels <- function (facilityID){
   
@@ -492,6 +493,8 @@ aws.trainModels <- function (facilityID){
   
   
 }
+
+print("loaded train models")
 #
 #
 #TRAIN MODELS WITH TRAIN SET IN FORMAT SPECIFIED IN ANOTHER FUNCTIONS
@@ -574,6 +577,8 @@ trainModels <- function(train){
   
 }
 
+
+print("loaded train models 2 ")
 #Function to be used as FUN argument in lapply
 montaLista<- function(x,zoneID,acquiID){		
   return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
@@ -582,3 +587,4 @@ montaLista<- function(x,zoneID,acquiID){
 #Rserve(debug=T,)
 #Rserve (TRUE)
 
+print("finished to load funtions")
