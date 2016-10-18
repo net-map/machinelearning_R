@@ -387,7 +387,9 @@ aws.PrepareData <- function (facilityID){
   #transform idZ into factor!
   tidyData[,1] <- as.factor(tidyData[,1])
   
-  print(getwd())
+  #REMOVE NAs
+  tidyData[is.na(tidyData)] <- -120
+  
   print (paste(dataPath,"/",facilityID,".rds",sep=""))                      
                        
   #save file with facilityID as name
