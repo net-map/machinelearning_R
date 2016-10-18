@@ -15,7 +15,7 @@ invisible(library(neuralnet))
 invisible(library(gridExtra))
 invisible(library(rpart))
 invisible(library(RWeka))
-invisible(library(Rserve))
+#invisible(library(Rserve))
 
 
 
@@ -290,11 +290,16 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
 #
 #
 aws.PrepareData <- function (facilityID){
+  #ec2-52-67-171-39.sa-east-1.compute.amazonaws.com
+  #aws.PrepareData("580264eabde5c6211d18821b")
+  print("Trying to connect to mongo...")
   
-  mongo <- mongo.create(host="localhost:27017",username="netmap",password = "brocoliéumvegetal")
+  mongo <- mongo.create(host="ec2-52-67-171-39.sa-east-1.compute.amazonaws.com:27017",username="netmap",password = "brocoliéumvegetal")
   
   if (mongo.is.connected(mongo) == TRUE) {
- 
+    
+    print("Succesfully connected to mongo")
+    
     db <- "server_api_production"
     
     zones <- paste(db,"zones",sep = ".")
