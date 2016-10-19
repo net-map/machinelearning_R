@@ -283,6 +283,43 @@ print("loaded wrapper")
 
 #
 #
+#Input: facility name
+#
+#
+#Output: facility ID
+#
+#
+aws.getIDfromName <- function(name){
+  
+  print("Trying to connect to mongo...")
+  
+  mongo <- mongo.create(host="localhost:27017",username="netmap",password = "brocoliéumvegetal")
+  
+  if (mongo.is.connected(mongo) == TRUE) {
+    
+    print("Succesfully connected to mongo")
+    
+    db <- "server_api_production"
+    
+    
+    facilities <- paste(db,"facilities",sep = ".")
+    
+    #retrive list of facilities that match query and get 1st element which is the ID
+    facilityID<-mongo.find.all(mongo,facilities,list(name=args))[[1]][[1]]
+  
+    return (facilityID)
+  }
+  else{
+    
+    print("Name not found on db!")
+    
+    return()
+  }
+}
+
+
+#
+#
 #Input: facilityID
 #
 #
@@ -369,6 +406,7 @@ aws.PrepareData <- function (facilityID){
     
   }else{
     print("Could not connect to Mongo! DAMN IT LIRA")
+    return()
   }
   
   
