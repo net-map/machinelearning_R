@@ -305,7 +305,7 @@ aws.getIDfromName <- function(name){
     facilities <- paste(db,"facilities",sep = ".")
     
     #retrive list of facilities that match query and get 1st element which is the ID
-    facilityID<-mongo.find.all(mongo,facilities,list(name=args))[[1]][[1]]
+    facilityID<-mongo.find.all(mongo,facilities,list(name=name))[[1]][[1]]
   
     return (facilityID)
   }
