@@ -19,6 +19,107 @@ print("loaded everything")
 
 
 
+#to be called locally to test our trained models with data!
+#returns error rates for each model used and voting scheme
+testRealModels<-function(facilityName){
+  
+  
+  mongo <- mongo.create(host="52.67.171.39:27017",username="netmap",password = "brocoliéumvegetal")
+  
+  if(mongo.is.connected(mongo) == TRUE){
+  
+    db <- "server_api_production"
+    
+    
+    facilities <- paste(db,"facilities",sep = ".")
+    
+    #retrive list of facilities that match query and get 1st element which is the ID
+    results<-mongo.find.all(mongo,facilities,list(name=facilityName))
+    
+    if(length(results)==0){
+      print("Could not find that facility name")
+      return()
+    }else{
+      facilityID <- results[[1]][[1]]
+    }
+    
+    
+    pathModels <- paste("trained-models/",facilityID,".rds",sep="")
+    pathData <- paste("prepared-data/",facilityID,".rds",sep="")
+    
+    
+    #get trained models
+    trainedModels <- readRDS(pathModels)
+    
+    #get datasets so we can use the train set in the KNN prediction
+    data <- readRDS(pathData)
+    
+    #scale new data!
+    dataScaled <- predict(trainedModels$preProc,data)
+    
+    
+    #deserialize Java J48 and SMO objects
+    rJava::.jstrVal(trainedModels$Tree$classifier)
+    rJava::.jstrVal(trainedModels$SMO$classifier)
+    
+    
+    
+    #get possible idZs
+    factors <- levels(data$idZ)
+    
+    #names of features used for training
+    names <- names(data)[-1]
+    
+    
+    #split train and test sets
+    index <- sample(1:nrow(dataScaled),round(0.8*nrow(dataScaled)))
+    
+    
+    
+    #Train and test SCALED
+    train_s <- dataScaled[index,]
+    test_s <- dataScaled[-index,]
+    
+    
+    
+    #KNN TRAIN
+    knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train_s,test=test_s,kernel="optimal")
+    
+    
+    
+    
+    listaModelos <- list("SMO"=trainedModels$SMO,"KNN"=knnModel,"treeAda"=trainedModels$Tree)
+    
+    #initialize summed support vector
+    sumProb <- vector(mode="numeric",length = length(factors))
+    
+    for (model in listaModelos){
+      
+      temp <- predictionWrapper(model,test_s,probabilities=TRUE)
+      
+      #WEIGHTED VOTING RULE
+      sumProb <- sumProb + temp
+      
+    }
+    
+    
+    resultsIDZ <- factors[apply (sumProb,1,function(x) which.max(x))]
+    
+    rateSuccess <- 100*mean(resultsIDZ==test_s$idZ)
+    
+    
+    
+    return(rateSuccess)
+    
+    
+  }else{
+    return("error: Could not connect to mongo")
+  }
+  
+}
+
+
+
 #prepare UCI dataset, first by findind it in "path"
 #then, take only measures specified by floor and building
 #justInside is a boolean that specifies if the data points should be the ones measured INSIDE the rooms
