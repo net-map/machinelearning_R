@@ -530,6 +530,8 @@ aws.PrepareData <- function (facilityID){
   #save file with facilityID as name
   saveRDS(tidyData,paste(dataPath,"/",facilityID,".rds",sep=""))
   
+  return("ok")
+  
 }
 
 
