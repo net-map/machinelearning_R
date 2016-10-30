@@ -18,6 +18,58 @@ library(RWeka)
 
 
 
+getMeasureFromMongo <- function(queueID){
+  
+  mongo <- mongo.create(host="52.67.171.39:27017",username="netmap",password = "brocoliéumvegetal")
+  
+  if(mongo.is.connected(mongo) == TRUE){
+    
+    db <- "server_api_production"
+    
+    queue <- paste(db,"queued_classifications",sep = ".")
+    
+    #retrive queue that match ID
+    results<-mongo.find.one(mongo,queue,query=list('_id'=mongo.oid.from.string(queueID)))
+    
+    #transform in to an R list
+    results <- mongo.bson.to.list(results)
+    
+    dataVector <- results$access_points
+    
+    
+    BSSIDlist <- unlist(lapply(dataVector,function(x) return( x$BSSID )))
+    
+    RSSIlist <-  unlist(lapply(dataVector,function(x) return( x$RSSI )))
+    
+    
+    #Reshape measure to the format to be worked by the single test function
+    transposedData <- matrix(nrow=1,ncol=length(BSSIDlist))
+    
+    transposedData <- data.frame(transposedData)
+    
+    
+    names(transposedData) <- BSSIDlist
+    
+    transposedData[1,] <- RSSIlist
+    
+    return(transposedData)
+    
+  } else{
+    
+    print("Could not connect to mongo!")
+    
+    return("ERROR")
+}
+
+  
+  
+  
+}
+
+
+
+
+
 #to be called locally to test our trained models with data!
 #returns error rates for each model used and voting scheme
 testRealModels<-function(facilityName){
@@ -275,6 +327,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   #scale new data!
   testVector <- predict(modelsList$preProc,testVector)
   
+  print(testVector)
   
   #KNN TRAIN
   knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=testVector,kernel="optimal")
@@ -543,30 +596,40 @@ aws.PrepareData <- function (facilityID){
 #Output: ID of zone 
 #
 #
-aws.SingleTest <- function (jsonMeasure,facilityID){
+aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
-  #setwd("~/Documents/machinelearning_R")
-  #getData
-  dataVector <- jsonlite::fromJSON(jsonMeasure)$acquisition$access_points
+  if(!missing(jsonMeasure) && missing(queueID)){
+    
+    dataVector <- jsonlite::fromJSON(jsonMeasure)$acquisition$access_points
+    
+    print(dataVector)
+    
+    BSSIDlist <- dataVector$BSSID
+    RSSIlist <- dataVector$RSSI
+    
+    #row vector
+    transposedData <- matrix(nrow=1,ncol=length(BSSIDlist))
+    
+    transposedData <- data.frame(transposedData)
+    
+    
+    names(transposedData) <- BSSIDlist
+    
+    transposedData[1,] <- RSSIlist
   
-  print(dataVector)
-  
-  BSSIDlist <- dataVector$BSSID
-  RSSIlist <- dataVector$RSSI
-  
-  #row vector
-  transposedData <- matrix(nrow=1,ncol=length(BSSIDlist))
-  
-  transposedData <- data.frame(transposedData)
-  
-  
-  names(transposedData) <- BSSIDlist
-  
-  transposedData[1,] <- RSSIlist
-  
+  } else if(missing(jsonMeasure) && !missing(queueID)){
+   
+     #get queued measure from mongo
+    transposedData <- getMeasureFromMongo(queueID)
+    
+  }else{
+    
+    print("Wrong argument format!!!!")
+    
+    return("ERROR")
+  }
   
   print(transposedData)
-  
   
   pathModels <- paste("trained-models/",facilityID,".rds",sep="")
   
@@ -718,6 +781,11 @@ trainModels <- function(train){
 #Function to be used as FUN argument in lapply
 montaLista<- function(x,zoneID,acquiID){		
   return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
+}
+
+#Function to be used as FUN argument in lapply
+montaLista2<- function(x){		
+  return (list(BSSID=x[1],RSSI=x[2]))		
 }
 
 #Rserve(debug=T,)
