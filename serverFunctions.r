@@ -711,8 +711,9 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   invisible(rJava::.jstrVal(trainedModels$Tree$classifier))
   
   
-  invisible(rJava::.jstrVal(trainedModels$SMO$classifier))
+  error <- try(invisible(rJava::.jstrVal(trainedModels$SMO$classifier)))
   
+  print(error)
   
   
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
