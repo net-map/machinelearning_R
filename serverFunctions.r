@@ -706,8 +706,11 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   #deserialize Java J48 and SMO objects
   
   print(str(trainedModels))
-  rJava::.jstrVal(trainedModels$Tree$classifier)
-  rJava::.jstrVal(trainedModels$SMO$classifier)
+  
+  
+  #rJava::.jstrVal(trainedModels$Tree$classifier)
+  
+  #rJava::.jstrVal(trainedModels$SMO$classifier)
   
   
   
