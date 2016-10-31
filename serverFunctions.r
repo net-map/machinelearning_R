@@ -708,9 +708,10 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   print(str(trainedModels))
   
   
-  #rJava::.jstrVal(trainedModels$Tree$classifier)
+  rJava::.jstrVal(trainedModels$Tree$classifier)
   
-  #rJava::.jstrVal(trainedModels$SMO$classifier)
+  print("merda")
+  rJava::.jstrVal(trainedModels$SMO$classifier)
   
   
   
