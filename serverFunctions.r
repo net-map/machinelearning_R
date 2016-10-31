@@ -695,6 +695,8 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   }
   
   print(transposedData)
+  print(queueID)
+  print(facilityID)
   
   pathModels <- paste("trained-models/",facilityID,".rds",sep="")
   
@@ -714,9 +716,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   dataset <- readRDS(pathData)
   print("Got data!")
   
-  print(queueID)
-  print(facilityID)
-  
+
   
   return(prediction.from.models(transposedData,dataset,trainedModels))
 }
