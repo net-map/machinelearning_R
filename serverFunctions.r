@@ -705,10 +705,11 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   print("Got models!")
   #deserialize Java J48 and SMO objects
   rJava::.jstrVal(trainedModels$Tree$classifier)
+  print("MERDA")
   rJava::.jstrVal(trainedModels$SMO$classifier)
   
   
-  
+  print("MERDA")
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
   
   
