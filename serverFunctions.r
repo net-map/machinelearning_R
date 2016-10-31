@@ -708,14 +708,14 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   print(str(trainedModels))
   
   
-  #error1 <- try(rJava::.jstrVal(trainedModels$Tree$classifier))
+  error1 <- try(rJava::.jstrVal(trainedModels$Tree$classifier))
   
   
-  #error <- try(rJava::.jstrVal(trainedModels$SMO$classifier))
+  error <- try(rJava::.jstrVal(trainedModels$SMO$classifier))
   
   #print(error)
-  #print(error1)
-  #print(error)
+  print(error1)
+  print(error)
   
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
   print(pathData)
