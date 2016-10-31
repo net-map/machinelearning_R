@@ -539,6 +539,7 @@ aws.getIDfromName <- function(name){
 #Output: Get dataset from mongo and prepare it for training
 #
 #
+#* @get /prepare
 aws.PrepareData <- function (facilityID){
   #ec2-52-67-171-39.sa-east-1.compute.amazonaws.com
   #aws.PrepareData("580264eabde5c6211d18821b")
@@ -661,6 +662,7 @@ aws.PrepareData <- function (facilityID){
 #       ID of zone 
 #
 #
+#* @get /singleTest
 aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
   if(!missing(jsonMeasure) && missing(queueID)){
@@ -710,7 +712,6 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
   invisible(rJava::.jstrVal(trainedModels$Tree$classifier))
   
-  
   invisible(rJava::.jstrVal(trainedModels$SMO$classifier))
   
 
@@ -726,7 +727,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   return(prediction.from.models(transposedData,dataset,trainedModels))
 }
 
-
+#* @get /train
 aws.trainModels <- function (facilityID){
   
   #setwd("~/Documents/machinelearning_R")
