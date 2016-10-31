@@ -700,7 +700,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
   #get trained models
   trainedModels <- readRDS(pathModels)
-  
+  print("Got models!")
   #deserialize Java J48 and SMO objects
   rJava::.jstrVal(trainedModels$Tree$classifier)
   rJava::.jstrVal(trainedModels$SMO$classifier)
@@ -712,7 +712,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
   #get datasets so we can use the train set in the KNN prediction
   dataset <- readRDS(pathData)
-  
+  print("Got data!")
   
   print(queueID)
   print(facilityID)
