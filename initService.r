@@ -6,7 +6,7 @@
 
 library("plumber")
 
-r <- plump("serverFunctions.r")
+r <- plumb("serverFunctions.r")
 
 
 r$run(port=2000)
