@@ -17,10 +17,22 @@ library(rpart)
 library(RWeka)
 
 
-
+#
+#Function to get a acquisition set from a localization test in mongo, which is stored there by some cellphone using the system
+#
+#
+#
+#Args:
+#     queueID: ID from objet with RSSIs and BSSIDs stored by the cellphone on mongo
+#
+#Output:
+#     list with measure in the format specified by the SingleTest funcion
+#
+#
+#
 getMeasureFromMongo <- function(queueID){
   
-  mongo <- mongo.create(host="52.67.171.39:27017",username="netmap",password = "brocoliéumvegetal")
+  mongo <- mongo.create(host="localhost:27017",username="netmap",password = "brocoliéumvegetal")
   
   if(mongo.is.connected(mongo) == TRUE){
     
@@ -68,10 +80,21 @@ getMeasureFromMongo <- function(queueID){
 
 
 
-
-
-#to be called locally to test our trained models with data!
-#returns error rates for each model used and voting scheme
+#
+#Function to to be called locally to test our trained models with data
+#
+#
+#
+#Args:
+#     facilityName: Name of facility to be tested
+#
+#Output:
+#     Error Rate 
+#
+#
+#
+#
+#
 testRealModels<-function(facilityName){
   
   
@@ -293,7 +316,7 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
 
 
 
-#Use trained models to provide a single classification answer from testVector
+#
 #REMOVE ZONE ID FROM VECTOR
 #
 #WEIGHTED  VOTE
@@ -304,6 +327,30 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
 #
 #
 #
+
+#
+#Use trained models to provide a single classification answer from testVector
+#
+#
+#
+#Args:
+#     testVector: The format must be as specified below:
+#     
+#                     RSSID1 RSSID2 RSSID3 ... 
+#                       -30     -39    -29         
+#
+#     train:      dataset that was used to train the models
+#
+#     modelsList:     List with the trained models
+#Output:
+#     predicted zone ID 
+#
+#
+#
+#
+#
+
+
 prediction.from.models <- function(testVector,train,modelsList){
   
   #get possible idZs
@@ -363,8 +410,24 @@ prediction.from.models <- function(testVector,train,modelsList){
   
 }
 
-#wrapper for predict methods for ML models
-#return predictions as FACTORS or support matrix
+#
+# Wrapper function to unify call to predition functions from the models used
+#
+#
+#
+#Args:
+#         model:   model object in which the prediction is being made
+#         test:    dataframe in which the test is going to be made
+#                       can be just a single line or multiple ones  
+#
+#         probabilities:  boolean to specify if the output is the class probabilities (TRUE) or
+#                         just the class names (FALSE)
+#
+#
+#
+#Output:
+#         Prediction in the form of probabilities or class name
+#
 predictionWrapper<- function(model,test,probabilities=TRUE,...) {
 
   
@@ -431,7 +494,7 @@ if(grepl("SMO",model$call) || grepl("Ada",model$call) ||  grepl("J48",model$call
 }
 
 
-#
+#Get ID from a facility name in mongo
 #
 #Input: facility name
 #
@@ -589,11 +652,13 @@ aws.PrepareData <- function (facilityID){
 
 
 #
+#Make a zone prediction based on input data from cellphone
 #
+#Args: 
+#       jsonMeasure: object with measures and facility from which the trained models will be used
 #
-#Input: json object with measures and facility from which the trained models will be used
-#
-#Output: ID of zone 
+#Output: 
+#       ID of zone 
 #
 #
 aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
@@ -649,7 +714,8 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   dataset <- readRDS(pathData)
   
   
-  
+  print(queueID)
+  print(facilityID)
   
   
   return(prediction.from.models(transposedData,dataset,trainedModels))
@@ -764,9 +830,6 @@ trainModels <- function(train){
   #saveRDS(mylogit1,"SVM.rds")
   
   
-  
-  
-  
   if(usingNN){
     modelList <- list("NeuralNet" = nn,"SMO" = SMO,"Tree" = treeAda)
   }
@@ -778,16 +841,11 @@ trainModels <- function(train){
 }
 
 
+
 #Function to be used as FUN argument in lapply
 montaLista<- function(x,zoneID,acquiID){		
   return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
 }
 
-#Function to be used as FUN argument in lapply
-montaLista2<- function(x){		
-  return (list(BSSID=x[1],RSSI=x[2]))		
-}
 
-#Rserve(debug=T,)
-#Rserve (TRUE)
 
