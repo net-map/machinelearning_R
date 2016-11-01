@@ -404,6 +404,12 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   print(idZBayas)
   #return output zone_id
+  
+  if(!is.na(idZBayas)){
+    zoneName <- aws.getNamefromID(idZBayas)
+    return(zoneName)
+  }
+  
   return (idZBayas)
   
   
@@ -529,6 +535,56 @@ aws.getIDfromName <- function(name){
     return()
   }
 }
+
+#Get ID from a facility name in mongo
+#
+#Input: zone ID
+#
+#
+#Output: zone name
+#
+#
+aws.getNamefromID <- function(zoneID){
+  
+  print("Trying to connect to mongo...")
+  
+  mongo <- mongo.create(host="52.67.171.39:27017",username="netmap",password = "brocoliéumvegetal")
+  
+  if (mongo.is.connected(mongo) == TRUE) {
+    
+    print("Succesfully connected to mongo")
+    
+    db <- "server_api_production"
+    
+    
+    zones <- paste(db,"zones",sep = ".")
+    
+    
+    #retrive all zones from that facility
+    zoneName <- mongo.find.all(mongo,zones,list('_id'=mongo.oid.from.string(zoneID)))[[1]][[2]]
+    
+    
+    
+    
+    return (zoneName)
+  }
+  else{
+    
+    print("Name not found on db!")
+    
+    return()
+  }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 #
@@ -662,14 +718,15 @@ aws.PrepareData <- function (facilityID){
 #       ID of zone 
 #
 #
-#* @get /singleTest
-aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
+#* @post /singleTest
+aws.SingleTest <- function (facility_id,access_points){
+
+    dataVector <- access_points
   
-  if(!missing(jsonMeasure) && missing(queueID)){
     
-    dataVector <- jsonlite::fromJSON(jsonMeasure)$acquisition$access_points
-    
-    print(dataVector)
+    facilityID <- facility_id
+   
+  
     
     BSSIDlist <- dataVector$BSSID
     RSSIlist <- dataVector$RSSI
@@ -684,21 +741,12 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
     
     transposedData[1,] <- RSSIlist
   
-  } else if(missing(jsonMeasure) && !missing(queueID)){
+
    
      #get queued measure from mongo
-    transposedData <- getMeasureFromMongo(queueID)
+     #transposedData <- getMeasureFromMongo(queueID)
     
-  }else{
-    
-    print("Wrong argument format!!!!")
-    
-    return("ERROR")
-  }
-  
-  print(transposedData)
-  print(queueID)
-  print(facilityID)
+
   
   pathModels <- paste("trained-models/",facilityID,".rds",sep="")
   
@@ -707,8 +755,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   print("Got models!")
   #deserialize Java J48 and SMO objects
   
-  print(str(trainedModels$Tree$classifier))
-  print(str(trainedModels$SMO$classifier))
+
   
   invisible(rJava::.jstrVal(trainedModels$Tree$classifier))
   
@@ -716,8 +763,7 @@ aws.SingleTest <- function (queueID,jsonMeasure=NULL,facilityID){
   
 
   pathData <- paste("prepared-data/",facilityID,".rds",sep="")
-  print(pathData)
-  
+
   #get datasets so we can use the train set in the KNN prediction
   dataset <- readRDS(pathData)
   print("Got data!")
