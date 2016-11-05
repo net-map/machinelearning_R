@@ -7,23 +7,22 @@ Rscript initService.r
 
 Funcion to train models:
 
-	GET localhost:2000/train&facilityID=ID_SEM_ASPAS
+	GET localhost:2000/train?facilityID=ID_SEM_ASPAS
 	
-	output: [OK]
+	output: ["ok"]
 
 Function to prepare data:
 
-	GET localhost:2000/prepare&facilityID=ID_SEM_ASPAS
+	GET localhost:2000/prepare?facilityID=ID_SEM_ASPAS
 	
-	output: [OK]
+	output: ["ok"]
 
 
 Function to make a single prediction:
 	
-	POST  
-		Argumento JSON:
+	POST body(JSON):
 		 
-		 {
+{
     "facility_id": "5806a9a1bde5c63ae4c5e3f0",
     "access_points": [
       {
@@ -47,7 +46,7 @@ Function to make a single prediction:
         "RSSI": -83
       }
     ]
-  } 
+} 
 
 
 		localhost:2000/singleTest
