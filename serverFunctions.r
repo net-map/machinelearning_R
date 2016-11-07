@@ -362,7 +362,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   
   #creates dummy vector with BSSIDs used to train the classifier
-  dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
+  dummyVector <- t(as.data.frame(x=rep(NA,length(names)),names))
   
   #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
   commomNames <- intersect(names,names(testVector))
@@ -372,7 +372,8 @@ prediction.from.models <- function(testVector,train,modelsList){
   print("Test Vector:")
   print(testVector)
   print("-------------")
-  testVector <- merge(dummyVector,testVector,all.y=TRUE)
+  #testVector <- merge(dummyVector,testVector,all.y=TRUE,by=commomNames)
+  testVector <- merge(dummyVector,testVector,all.y=TRUE,by=commomNames)
   
   testVector[is.na(testVector)] <- -120
   
