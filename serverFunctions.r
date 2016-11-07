@@ -360,6 +360,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   names <- names(train)[-1]
   
   
+  
   #creates dummy vector with BSSIDs used to train the classifier
   dummyVector <- t(as.data.frame(x=rep(-120,length(names)),names))
   
@@ -397,7 +398,10 @@ prediction.from.models <- function(testVector,train,modelsList){
   }
   
   #results
-  idZBayas <- as.numeric(factors[which.max(sumProb)])
+  print(which.max(sumProb))
+  print(factors[which.max(sumProb)])
+  
+  idZBayas <- factors[which.max(sumProb)]
   
   
   
