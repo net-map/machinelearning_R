@@ -367,10 +367,11 @@ prediction.from.models <- function(testVector,train,modelsList){
   #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
   commomNames <- intersect(names,names(testVector))
   #get values that are present in testVector
-  
+  print("Dummy Vector:")
   print(dummyVector)
+  print("Test Vector:")
   print(testVector)
-  
+  print("-------------")
   testVector <- merge(dummyVector,testVector,all.y=TRUE)
   
   testVector[is.na(testVector)] <- -120
@@ -378,9 +379,9 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   #scale new data!
   testVector <- predict(modelsList$preProc,testVector)
-  
+  print("-------------")
   print(testVector)
-  
+  print("-------------")
   #KNN TRAIN
   knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=testVector,kernel="optimal")
   
