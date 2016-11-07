@@ -367,6 +367,10 @@ prediction.from.models <- function(testVector,train,modelsList){
   #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
   commomNames <- intersect(names,names(testVector))
   #get values that are present in testVector
+  
+  print(dummyVector)
+  print(testVector)
+  
   testVector <- merge(dummyVector,testVector,all.y=TRUE)
   
   testVector[is.na(testVector)] <- -120
