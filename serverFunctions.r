@@ -365,26 +365,31 @@ prediction.from.models <- function(testVector,train,modelsList){
   dummyVector <- t(as.data.frame(x=rep(NA,length(names)),names))
   
   #merge testVector with dummyVector in a way that if there is a BSSID missing in the testVector, it is created with -120
-  commomNames <- intersect(names,names(testVector))
+  #commonNames <- intersect(names,names(testVector))
+  #diff <- outersect(commonNames,names(testVector))
+  #newAPs <- !(names(testVector) %in% commonNames)
   #get values that are present in testVector
-  print("Dummy Vector:")
-  print(dummyVector)
-  print("Test Vector:")
-  print(testVector)
-  print("-------------")
-  #testVector <- merge(dummyVector,testVector,all.y=TRUE,by=commomNames)
-  testVector <- merge(dummyVector,testVector,all.y=TRUE,by=commomNames)
+  #print("Dummy Vector:")
+  #print(dummyVector)
+  #print("Test Vector:")
+  #print(testVector)
+  #print("-------------")
+
+  mergedVector <- merge(dummyVector,testVector,all.y=TRUE)
   
-  testVector[is.na(testVector)] <- -120
+  mergedVector[is.na(mergedVector)] <- -120
   
   
   #scale new data!
-  testVector <- predict(modelsList$preProc,testVector)
+  scaledVector <- predict(modelsList$preProc,mergedVector)
+  
+  print(setdiff(names(scaledVector),names(train)))
+  
   print("-------------")
-  print(testVector)
+  print(scaledVector)
   print("-------------")
   #KNN TRAIN
-  knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=testVector,kernel="optimal")
+  knnModel<-kknn(formula=idZ ~. , k=4,distance=1, train=train,test=scaledVector,kernel="optimal")
   
   
   
@@ -396,7 +401,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   for (model in listaModelos){
     
-    temp <- predictionWrapper(model,testVector,probabilities=TRUE)
+    temp <- predictionWrapper(model,scaledVector,probabilities=TRUE)
     
     #WEIGHTED VOTING RULE
     sumProb <- sumProb + temp
@@ -909,5 +914,9 @@ montaLista<- function(x,zoneID,acquiID){
   return (list(BSSID=x[1],RSSI=x[2],idZ=zoneID,acquiID=acquiID))		
 }
 
+outersect <- function(x, y) {
+  sort(c(setdiff(x, y),
+         setdiff(y, x)))
+}
 
 
