@@ -717,7 +717,7 @@ aws.PrepareData <- function (facilityID){
                        
   #save file with facilityID as name
   saveRDS(tidyData,paste(dataPath,"/",facilityID,".rds",sep=""))
-  
+  rm(list = setdiff(ls(), lsf.str()))
   return("ok")
   
 }
@@ -823,7 +823,7 @@ aws.trainModels <- function (facilityID){
   
   
   saveRDS(trainedModels,pathModels)
-  
+  rm(list = setdiff(ls(), lsf.str()))
   return("ok")
   
 }
