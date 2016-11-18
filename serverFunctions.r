@@ -411,7 +411,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   #results
   print(which.max(sumProb))
   print(factors[which.max(sumProb)])
-  
+  value <- max(sumProb)
   idZBayas <- factors[which.max(sumProb)]
   
   
@@ -422,7 +422,7 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   if(!is.na(idZBayas)){
     zoneName <- aws.getNamefromID(idZBayas)
-    return(zoneName)
+    return(paste(zoneName,value,sep=" Confiança: \n"))
   }
   
   return (idZBayas)
