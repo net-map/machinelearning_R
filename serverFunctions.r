@@ -197,12 +197,14 @@ testRealModels<-function(facilityName){
     rateSuccess <- 100*mean(resultsIDZ==test_s$idZ)
     
     algoRates <- cbind(algoRates,rateSuccess)
+    jpeg("~/GitHub/machinelearning_R/eletrica_media.jpeg", width = 2000, height = 1700, units = 'px', res = 300)
     
-    par(mar=c(5,8,4,2)) # increase y-axis margin.
+    par(mar=c(6,9,5,3)) # increase y-axis margin.
     
     par(las=2) # make label text perpendicular to axis
-    barplot(algoRates,main = "Taxa de acerto de teste do sistema e algoritmos",horiz = TRUE,names.arg=c("SMO", "KNN", "AdaBoost","net.map"))
     
+    barplot(algoRates,main = "Taxa de acerto (%) no Prédio da Elétrica",horiz = TRUE,names.arg=c("SMO", "KNN", "Árvore + Adaboost","Votação Ponderada"))
+    dev.off()
     return(rateSuccess)
     
     
