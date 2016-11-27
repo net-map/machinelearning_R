@@ -118,42 +118,51 @@ testRealModels<-function(facilityName){
     }
     
     
-    pathModels <- paste("trained-models/",facilityID,".rds",sep="")
     pathData <- paste("prepared-data/",facilityID,".rds",sep="")
     
+  
     
-    #get trained models
-    trainedModels <- readRDS(pathModels)
+    
     
     #get datasets so we can use the train set in the KNN prediction
     data <- readRDS(pathData)
     
-    #scale new data!
-    dataScaled <- predict(trainedModels$preProc,data)
+    
+    idZ <- data$idZ
+    
+    data <- dplyr::select(data,-idZ)
     
     
-    #deserialize Java J48 and SMO objects
-    rJava::.jstrVal(trainedModels$Tree$classifier)
-    rJava::.jstrVal(trainedModels$SMO$classifier)
+    #NON PCA SCALING
+    preProc  <- caret::preProcess(data)
     
+    scaled <- predict(preProc, data)
+    
+    scaled <- cbind(idZ,scaled)
+  
     
     
     #get possible idZs
-    factors <- levels(data$idZ)
+    factors <- levels(scaled$idZ)
     
     #names of features used for training
     names <- names(data)[-1]
     
     
     #split train and test sets
-    index <- sample(1:nrow(dataScaled),round(0.8*nrow(dataScaled)))
+    index <- sample(1:nrow(scaled),round(0.8*nrow(scaled)))
     
     
     
     #Train and test SCALED
-    train_s <- dataScaled[index,]
-    test_s <- dataScaled[-index,]
+    train_s <- scaled[index,]
+    test_s <- scaled[-index,]
     
+    #train SMO
+    SMOmodel <- SMO(idZ~.,data=train_s)
+    
+    #train Adaboost + tree
+    treeAdamodel <- AdaBoostM1(idZ~. , data = train_s ,control = Weka_control(W = list(J48, M=5)))
     
     
     #KNN TRAIN
@@ -162,26 +171,37 @@ testRealModels<-function(facilityName){
     
     
     
-    listaModelos <- list("SMO"=trainedModels$SMO,"KNN"=knnModel,"treeAda"=trainedModels$Tree)
+    listaModelos <- list("SMO"=SMOmodel,"KNN"=knnModel,"treeAda"=treeAdamodel)
     
     #initialize summed support vector
     sumProb <- vector(mode="numeric",length = length(factors))
-    
+    algoRates <- NULL
     for (model in listaModelos){
       
       temp <- predictionWrapper(model,test_s,probabilities=TRUE)
       
+      
+      resultsIDZt <- factors[apply (temp,1,function(x) which.max(x))]
+      
+      rateSuccesst <- 100*mean(resultsIDZt==test_s$idZ)
+      
+      algoRates <- cbind(algoRates,rateSuccesst)
       #WEIGHTED VOTING RULE
       sumProb <- sumProb + temp
       
     }
     
-    
+ 
     resultsIDZ <- factors[apply (sumProb,1,function(x) which.max(x))]
     
     rateSuccess <- 100*mean(resultsIDZ==test_s$idZ)
     
+    algoRates <- cbind(algoRates,rateSuccess)
     
+    par(mar=c(5,8,4,2)) # increase y-axis margin.
+    
+    par(las=2) # make label text perpendicular to axis
+    barplot(algoRates,main = "Taxa de acerto de teste do sistema e algoritmos",horiz = TRUE,names.arg=c("SMO", "KNN", "AdaBoost","net.map"))
     
     return(rateSuccess)
     
