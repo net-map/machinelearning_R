@@ -203,7 +203,7 @@ testRealModels<-function(facilityName){
     
     par(las=2) # make label text perpendicular to axis
     
-    barplot(algoRates,main = "Taxa de acerto (%) no Prédio da Elétrica",horiz = TRUE,names.arg=c("SMO", "KNN", "Árvore + Adaboost","Votação Ponderada"))
+    barplot(algoRates,main = "Taxa de acerto (%) no Pr?dio da El?trica",horiz = TRUE,names.arg=c("SMO", "KNN", "?rvore + Adaboost","Vota??o Ponderada"))
     dev.off()
     return(rateSuccess)
     
@@ -284,7 +284,8 @@ prepareUCIdata2 <- function (path,building,floor,zones=NULL,justInside=FALSE){
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
   #saveRDS(preProc,"trainedModels/scale.rds")
-  scaled <- predict(preProc, tidyData)
+  #scaled <- predict(preProc, tidyData)
+  scaled <- tidyData
   assign("preProc",preProc,.GlobalEnv)
   
   
@@ -403,7 +404,9 @@ prediction.from.models <- function(testVector,train,modelsList){
   
   
   #scale new data!
-  scaledVector <- predict(modelsList$preProc,mergedVector)
+  #scaledVector <- predict(modelsList$preProc,mergedVector)
+  
+  scaledVector <- mergedVector
   
   print(setdiff(names(scaledVector),names(train)))
   
@@ -834,7 +837,9 @@ aws.trainModels <- function (facilityID){
   #NON PCA SCALING
   preProc  <- caret::preProcess(tidyData)
   
-  scaled <- predict(preProc, tidyData)
+  #scaled <- predict(preProc, tidyData)
+  
+  scaled <- tidyData
   
   scaled <- cbind(idZ,scaled)
   #now, we train the models with data already scaled
