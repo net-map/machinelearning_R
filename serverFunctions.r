@@ -449,6 +449,10 @@ prediction.from.models <- function(testVector,train,modelsList){
     zoneName <- aws.getNamefromID(idZBayas)
     output <- list("ZonaName"=zoneName,"Confidence"=confValue)
     jsonOut <- jsonlite::toJSON(output)
+    
+    jsonOut <- gsub(pattern = "[",jsonOut,replacement="",fixed=TRUE)
+    jsonOut <- gsub(pattern = "]",jsonOut,replacement="",fixed=TRUE)
+    
     return(jsonOut)
   }
   
