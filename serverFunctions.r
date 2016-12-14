@@ -675,6 +675,8 @@ aws.PrepareData <- function (facilityID){
       
       lista <- NULL
       
+      if(length(listAcquisitions)>1){
+      
       for (a in 1:length(listAcquisitions)){
         listAP <- listAcquisitions[[a]]$access_points
         acquiID <- listAcquisitions[[a]]$`_id`
@@ -696,7 +698,10 @@ aws.PrepareData <- function (facilityID){
       }
       
       rawData <- rbind(rawData,lista)
-      
+      }
+      else{
+        print("No point found for this zone! Passing by it")
+      }
     }
     
     
