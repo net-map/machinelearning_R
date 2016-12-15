@@ -95,7 +95,7 @@ getMeasureFromMongo <- function(queueID){
 #
 #
 #
-testRealModels<-function(facilityName){
+testRealModels<-function(facilityName,savePath,nameGraph){
   
   
   mongo <- mongo.create(host="52.67.171.39:27017",username="netmap",password = "brocoliéumvegetal")
@@ -197,13 +197,18 @@ testRealModels<-function(facilityName){
     rateSuccess <- 100*mean(resultsIDZ==test_s$idZ)
     
     algoRates <- cbind(algoRates,rateSuccess)
-    jpeg("~/GitHub/machinelearning_R/eletrica_media.jpeg", width = 2000, height = 1700, units = 'px', res = 300)
+    
+    fullPath = paste(savePath,"/",nameGraph,".jpeg",sep = "")
+    
+    jpeg(fullPath, width = 2000, height = 1700, units = 'px', res = 300)
     
     par(mar=c(6,9,5,3)) # increase y-axis margin.
     
     par(las=2) # make label text perpendicular to axis
     
-    barplot(algoRates,main = "Taxa de acerto (%) no Pr?dio da El?trica",horiz = TRUE,names.arg=c("SMO", "KNN", "?rvore + Adaboost","Vota??o Ponderada"))
+    name <- paste("Taxa de acerto (%)",nameGraph)
+    
+    barplot(algoRates,xlim = c(90,100),xpd = FALSE,main =  name,horiz = TRUE,names.arg=c("SMO", "KNN", "Arvore + Adaboost","Votação Ponderada"))
     dev.off()
     return(rateSuccess)
     
